@@ -1,0 +1,74 @@
+# Local Git metadata used because the managed workspace exposes an empty .git mount.
+/.git-local/
+/.git/
+
+# Python and test caches
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Environments and local runtime state
+.venv/
+venv/
+.env
+.env.*
+.runtime_tmp/
+tmp_trash
+.agents/
+.codex/
+
+# Model weights, arrays and large binary artifacts
+*.ckpt
+*.h5
+*.hdf5
+*.npy
+*.npz
+*.onnx
+*.pt
+*.pth
+*.safetensors
+*.tar
+*.tar.gz
+*.zip
+
+# Machine-local datasets, outputs and execution records
+/artifacts/
+/data/
+/dual_task_diagnostics/
+/execution/
+/experiments/
+/operations/
+/outputs/
+
+# Keep only the current architecture/reproducibility package from the large
+# research and documentation trees.
+/research/*
+!/research/action_bank_29_finalization_20261005/
+!/research/action_bank_29_finalization_20261005/**
+
+/docs/*
+!/docs/research/
+/docs/research/*
+!/docs/research/action_bank_selector_architecture_20261005/
+!/docs/research/action_bank_selector_architecture_20261005/**
+
+# Draft paper and local progress logs are not part of the clean code snapshot.
+/paper/
+/README_POSITIVE_EVIDENCE.md
+/README_PROGRESS.md
+/STORAGE_POLICY.md
+
+# One-off storage migration helper is intentionally machine-specific.
+/scripts/repoint_ssd8_project_symlinks.py
+
+# Never embed nested repositories.
+**/.git/
+
+# Re-apply cache/binary rules after the selected research-tree negations.
+**/__pycache__/
+**/*.py[cod]

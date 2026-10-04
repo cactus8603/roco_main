@@ -1,0 +1,25 @@
+{
+  "schema": "optical-flow-final-validated-action-bank/v1",
+  "status": "EMPTY_PENDING_FRESH_SELECTION_AWARE_VALIDATION",
+  "native_fallback_action_id": "CSB/OF/SEA-RAFT/action/P0",
+  "validated_action_ids": [],
+  "family_count": 0,
+  "exact_control_count": 0,
+  "authority": {
+    "production": false,
+    "scientific_qualification": false,
+    "selector_admission": false
+  },
+  "frozen_candidate_source": {
+    "path": "research/action_bank_29_finalization_20261005/OPENED_CANDIDATE_ACTION_BANK.json",
+    "sha256": "740b27c02d78e47b1396f3e383de4ed40fc97bf23d575e0e22caaa4b11db0225",
+    "candidate_family_count": 3,
+    "candidate_exact_control_count": 4,
+    "reason_not_admitted": "The E3 panel was reused adaptively for capacity reduction and E275-E278 pruning, so its outer-fold predictions are development evidence rather than an untouched validation."
+  },
+  "admission_evidence": {
+    "path": "research/action_bank_29_finalization_20261005/ACTION_ADMISSION_MATRIX.json",
+    "sha256": "3048580fba8fdcbbbfeb2bc9dd8cfcb6ad2889ee3fddfc4099047a0e96e25b84"
+  },
+  "admission_rule": "Admit only actions that pass the frozen fresh-panel nested grouped validation protocol, including selection-aware leave-one-action-out ablation with multiplicity control."
+}

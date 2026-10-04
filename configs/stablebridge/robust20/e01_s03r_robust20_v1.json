@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "contract": "CSB-S03R-ROBUST20-v1-20260917",
+  "study": "E01/S06/S03R_robust20_source_control",
+  "model_profile": "main",
+  "clips_manifest": "experiments/E01_evidence_mechanism/manifests/development_clips_v1.json",
+  "tasks": ["stereo", "flow"],
+  "frames": "three",
+  "context_hw": null,
+  "context_policy": "each CroCo v2 task native crop; full-resolution corruption before crop",
+  "seed": 20260917,
+  "pipeline": {
+    "mode": "M1",
+    "memory_capacity": 8,
+    "memory_bytes": 33554432,
+    "memory_reads": 2,
+    "retrieval_policy": "diversity",
+    "local_operators": ["median3", "gaussian1"]
+  },
+  "matching": {
+    "max_queries": 1024,
+    "max_candidates": 24,
+    "feature_dim": 64,
+    "query_fraction": 0.1,
+    "max_update_px": 32.0,
+    "require_baseline_support": true
+  },
+  "profiles": {"kind": "robustspring20_proxy", "severities": [1, 2, 3]},
+  "arms": ["solved", "temporal", "temporal_duplicate", "temporal_wrong"],
+  "reference_bank": ["identity", "median3", "gaussian1"],
+  "confirmation_gates": {
+    "scientific_success_claim": false,
+    "reason": "one-scene Robust20 source-control mechanism matrix"
+  },
+  "cuda_memory_fraction": 0.6,
+  "frame_window_scope": "center-1, center, center+1",
+  "scenes": ["0009"],
+  "scientific_scope": "Robust20 x severity 1/2/3 source-control screen; no clean or cross-scene claim"
+}

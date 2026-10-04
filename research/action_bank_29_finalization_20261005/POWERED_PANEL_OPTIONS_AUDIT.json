@@ -1,0 +1,54 @@
+{
+  "schema": "action-bank-powered-panel-options-audit/v1",
+  "status": "AUDITED_WAITING_FOR_AUTHORITY",
+  "created_at": "2026-10-05",
+  "question": "Which untouched independent-group panel can support final action-bank confirmation without treating folds as new samples?",
+  "planning_basis": {
+    "unit": "independent physical scene or environment",
+    "minimum_finite_group_count": 65,
+    "candidate_group_counts": {
+      "CSB/OF/SEA-RAFT/action/P1-gaussian-s1": 136,
+      "CSB/OF/SEA-RAFT/action/R2-gaussian-s2": 607,
+      "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5": 65,
+      "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1": null
+    },
+    "warning": "These are opened-E3 planning approximations, not guarantees; K-fold repetition does not increase independent group count."
+  },
+  "options": [
+    {
+      "option_id": "E284_TARTANAIR_PHASE1",
+      "independent_groups": 20,
+      "outcomes_opened": false,
+      "authorized_for_execution": false,
+      "powered_for_positive_admission": false,
+      "permitted_inference": "candidate rejection or effect estimation after separately authorized locked analysis",
+      "forbidden_inference": "positive final admission from this panel alone",
+      "binding_path": "experiments/E284_tartanair_external_panel_freeze_v1/PANEL_MANIFEST.json",
+      "binding_sha256": "be35fd582155f12b3390e810fb6c6c041cc91c8dc586be7ea371075ba78f94e7"
+    },
+    {
+      "option_id": "KITTI_H2",
+      "independent_groups": 70,
+      "currently_frozen_corruption_count": 5,
+      "required_normative_corruption_count": 20,
+      "normative_corruption_coverage_satisfied": false,
+      "outcomes_opened": false,
+      "authorized_for_execution": false,
+      "powered_for_positive_admission": "group count meets only the R4 65-group planning threshold, not the 136- or 607-group thresholds; the existing five-corruption H2 contract also fails the required 20-corruption coverage",
+      "permitted_inference": "none until explicit authority and a separate final H2 protocol are frozen",
+      "forbidden_inference": "any H2 image decode, model forward, truth read, or outcome analysis under the current readiness state",
+      "split_binding_path": "experiments/E29_external_joint_panel/split_manifest.json",
+      "split_binding_sha256": "22c5c66d90f481f57c15e7c15027f691169d9e3a78ca603194e25132f9189245",
+      "readiness_path": "experiments/E186_h2_same_data_cost_readiness/readiness.json",
+      "readiness_sha256": "690fb83d653c886b7242f0cc7d39e19746915ca2859b1106d82e8265833b26a7",
+      "current_readiness_status": "WAITING_PRE_H2_SUCCESSOR_EVIDENCE_H2_SEALED",
+      "current_h2_execution_authorized": false,
+      "current_access_counts": {
+        "images_decoded": 0,
+        "model_forwards": 0,
+        "truth_reads": 0
+      }
+    }
+  ],
+  "conclusion": "E284 is scientifically useful but reject-only. H2 has enough groups for the R4-only primary hypothesis but its existing contract covers only five corruptions rather than the required 20 and it remains sealed; it cannot be used without explicit authority and a new action-bank-specific final protocol. No currently authorized panel supports positive final admission."
+}

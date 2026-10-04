@@ -1,0 +1,260 @@
+{
+  "schema": "action-bank-fresh-validation-work-package/v1",
+  "status": "FROZEN_METHOD_WITH_REJECT_ONLY_FRESH_PANEL_WAITING_FOR_POWERED_EXTENSION_AND_OUTCOMES",
+  "authority": {
+    "action_admission": false,
+    "continuous_strength": false,
+    "production": false,
+    "scientific_qualification": false,
+    "selector_admission": false
+  },
+  "native_action_id": "CSB/OF/SEA-RAFT/action/P0",
+  "candidate_action_ids": [
+    "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+    "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+    "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+    "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1"
+  ],
+  "primary_confirmation_action_ids": [
+    "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5"
+  ],
+  "shadow_hypothesis_action_ids": [
+    "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+    "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+    "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1"
+  ],
+  "candidate_families": {
+    "optical.detail_recovery_unsharp.v1": [
+      "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5"
+    ],
+    "optical.joint_radiometry.v1": [
+      "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1"
+    ],
+    "optical.lowpass_hf_suppression.v1": [
+      "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+      "CSB/OF/SEA-RAFT/action/R2-gaussian-s2"
+    ]
+  },
+  "data_contract": {
+    "outcome_exposure": "no candidate action outcome may be inspected before panel, folds, gates, and all run configs are hash-bound",
+    "independent_unit": "largest physical scene, capture sequence, or benchmark component shared by correlated rows",
+    "required_disjointness": [
+      "no E3 Spring development scene",
+      "no scene/component used to choose the 29-to-4 reduction",
+      "no overlap between independent groups",
+      "no group split across train, calibration, or outer evaluation"
+    ],
+    "ground_truth": "task-valid optical-flow GT is mandatory; hidden test images without accessible GT cannot qualify actions",
+    "corruption_coverage": "the normative 20-corruption gate must be adjudicable, with clean/null retained",
+    "endpoint_coverage": "first-only, second-only, and both-end exposures are reported and never split across group roles",
+    "power": {
+      "method": "prospective scene/component-cluster power analysis before outcomes",
+      "opened_e3_planning_only_independent_scene_counts": {
+        "CSB/OF/SEA-RAFT/action/P1-gaussian-s1": 136,
+        "CSB/OF/SEA-RAFT/action/R2-gaussian-s2": 607,
+        "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5": 65,
+        "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1": null
+      },
+      "warning": "K folds and repeated folds do not increase the number of independent groups"
+    }
+  },
+  "cross_validation": {
+    "outer": "GroupKFold with five folds by default; outer rows are evaluation-only",
+    "inner": "GroupKFold over the remaining outer-training groups; normalization, targets, weights, thresholds, and calibration are inner-only",
+    "default_outer_fold_count": 5,
+    "default_inner_fold_count": 4,
+    "minimum_fold_count_supported_by_trainer": 3,
+    "bootstrap_unit": "independent scene/component group",
+    "condition_label_model_visible": false,
+    "target_access_for_controller": "none"
+  },
+  "primary_confirmation_run": {
+    "run_id": "PRIMARY_R4",
+    "purpose": "single predeclared fresh admission hypothesis",
+    "action_ids": [
+      "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5"
+    ],
+    "comparison": "nested grouped OOF router versus exact native fallback",
+    "multiplicity": "none for one predeclared action hypothesis"
+  },
+  "comprehensive_diagnostic_run_matrix_authority": "optional mechanism diagnostics only; cannot admit shadow hypotheses",
+  "unique_router_runs": [
+    {
+      "run_id": "FULL4",
+      "purpose": "global fixed-bank confirmation",
+      "action_ids": [
+        "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+        "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+        "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+        "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1"
+      ]
+    },
+    {
+      "run_id": "LOO_P1",
+      "purpose": "action-level necessity for Gaussian sigma 1",
+      "action_ids": [
+        "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+        "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+        "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1"
+      ]
+    },
+    {
+      "run_id": "LOO_R2",
+      "purpose": "action-level necessity for Gaussian sigma 2",
+      "action_ids": [
+        "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+        "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+        "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1"
+      ]
+    },
+    {
+      "run_id": "LOO_R4",
+      "purpose": "action-level and unsharp-family necessity",
+      "action_ids": [
+        "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+        "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+        "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1"
+      ]
+    },
+    {
+      "run_id": "LOO_P3",
+      "purpose": "action-level and radiometry-family necessity",
+      "action_ids": [
+        "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+        "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+        "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5"
+      ]
+    },
+    {
+      "run_id": "LOO_FAMILY_LOWPASS",
+      "purpose": "low-pass family necessity after both strengths are removed",
+      "action_ids": [
+        "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+        "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1"
+      ]
+    },
+    {
+      "run_id": "LOWPASS_TWO_STRENGTHS",
+      "purpose": "multi-strength policy",
+      "action_ids": [
+        "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+        "CSB/OF/SEA-RAFT/action/R2-gaussian-s2"
+      ]
+    },
+    {
+      "run_id": "LOWPASS_SIGMA1_ONLY",
+      "purpose": "single-strength comparator",
+      "action_ids": [
+        "CSB/OF/SEA-RAFT/action/P1-gaussian-s1"
+      ]
+    },
+    {
+      "run_id": "LOWPASS_SIGMA2_ONLY",
+      "purpose": "single-strength comparator",
+      "action_ids": [
+        "CSB/OF/SEA-RAFT/action/R2-gaussian-s2"
+      ]
+    }
+  ],
+  "global_full_bank_gates": {
+    "corrupt_macro_relative_gain_vs_native_min": 0.05,
+    "clean_relative_degradation_max": 0.02,
+    "catastrophe_per_intervention_max": 0.005,
+    "corrupt_gain_clustered_lower_bound_strictly_positive": true,
+    "normative_corruptions_improved_min": 12,
+    "normative_corruption_count": 20
+  },
+  "admission_rules": {
+    "action": "admit an exact control only when its independently retrained action-LOO minus FULL4 loss has a multiplicity-controlled one-sided clustered lower bound above zero",
+    "family": "retain a mechanism direction only when its family-LOO minus FULL4 loss has a multiplicity-controlled one-sided clustered lower bound above zero",
+    "strength": "claim discrete strength proposal only when LOWPASS_TWO_STRENGTHS beats both independently retrained single-strength comparators with simultaneous-positive clustered lower bounds",
+    "continuous_strength": "forbidden; requires a separate anchor/interpolation protocol",
+    "post_selection": "publish the admitted IDs separately from candidate IDs and confirm the selected reduced bank on another untouched panel before deployment claims"
+  },
+  "multiplicity": {
+    "action_family": "predeclared max-T clustered bootstrap or Holm correction over four action hypotheses",
+    "family_family": "predeclared max-T clustered bootstrap or Holm correction over three family hypotheses",
+    "strength_family": "predeclared max-T clustered bootstrap or Holm correction over two single-strength comparisons"
+  },
+  "frozen_sources": {
+    "candidate_bank": {
+      "path": "research/action_bank_29_finalization_20261005/OPENED_CANDIDATE_ACTION_BANK.json",
+      "sha256": "740b27c02d78e47b1396f3e383de4ed40fc97bf23d575e0e22caaa4b11db0225"
+    },
+    "validation_protocol": {
+      "path": "research/action_bank_29_finalization_20261005/VALIDATION_PROTOCOL.md",
+      "sha256": "bf7a7870571c1eacb592f72c4d10e6ae99c12356bfbad5c0bc50b705f0914d12"
+    },
+    "dynamic_group_router": {
+      "path": "research/action_bank_29_finalization_20261005/train_dynamic_group_router.py",
+      "sha256": "aca2d85bcdbd41db6e26cac83b4da3098a5b05ed1eca57db0746f324baa20a62"
+    },
+    "dynamic_router_parity": {
+      "path": "experiments/E280_dynamic_group_router_parity_v1/PARITY.json",
+      "sha256": "750ae3737fded42a13103611dcc7bfe33b65aa99cdf3e66d8944156f6faa423a"
+    },
+    "action_loo_diagnostic": {
+      "path": "research/action_bank_29_finalization_20261005/E279_SELECTION_AWARE_LOO_RESULT.json",
+      "sha256": "47ab4160cbb029d3f3349684a7f189526834b1ffafe0532c6f3af08b4ecb51cc"
+    },
+    "family_loo_diagnostic": {
+      "path": "research/action_bank_29_finalization_20261005/E281_SELECTION_AWARE_FAMILY_LOO_RESULT.json",
+      "sha256": "df9af01f15e9cc1cd3afc58d9d6cf58a8f10b5ee8b991e2e8ca7b365f44b4694"
+    },
+    "strength_diagnostic": {
+      "path": "research/action_bank_29_finalization_20261005/E282_STRENGTH_PROPOSAL_RESULT.json",
+      "sha256": "a6c818c996ab7dba1534095f23f9d5bb33d37307d1eeb977bdedf490e88bb981"
+    },
+    "external_panel_phase1": {
+      "path": "experiments/E284_tartanair_external_panel_freeze_v1/PANEL_MANIFEST.json",
+      "sha256": "be35fd582155f12b3390e810fb6c6c041cc91c8dc586be7ea371075ba78f94e7"
+    },
+    "external_panel_phase1_protocol_amendment": {
+      "path": "experiments/E284_tartanair_external_panel_freeze_v1/PROTOCOL_AMENDMENT_V2.json",
+      "sha256": "c4cf98ed41f351244fb1dec27654ae566f450dea16d9b88051bfcb420860554b"
+    },
+    "powered_panel_options_audit": {
+      "path": "research/action_bank_29_finalization_20261005/POWERED_PANEL_OPTIONS_AUDIT.json",
+      "sha256": "9352b6d00afaca0b4ede5110a7261865cfb572020ff8a5c1e269ab06d3b9817a"
+    },
+    "primary_confirmation_shortlist": {
+      "path": "research/action_bank_29_finalization_20261005/PRIMARY_CONFIRMATION_SHORTLIST.json",
+      "sha256": "867533ed15da19477c2c1272f63d2364a089f8f01e4176953e6850a89eb318f3"
+    },
+    "external_panel_r4_preoutcome_receipt": {
+      "path": "experiments/E285_tartanair_r4_preoutcome_inference_v1/PANEL_RECEIPT.json",
+      "sha256": "e6a39df86db8ee52d9500a94f4036c5c375a072119081a7e8cb587910b166885"
+    },
+    "external_panel_r4_reproducibility_audit": {
+      "path": "experiments/E285_tartanair_r4_preoutcome_inference_v1/REPRODUCIBILITY_AUDIT.json",
+      "sha256": "9992bdb023bc8e23cf921efd6483f1987f4738780a10e4c8aa75c921bf8e528e"
+    },
+    "gpu_action_preflight": {
+      "path": "experiments/E283_action_bank_gpu_preflight_v1/PREFLIGHT.json",
+      "sha256": "9edc0c45af7ca449a97e29bc9cd2406f1407d16db35113a98ad00238384ab38c"
+    }
+  },
+  "execution_readiness": {
+    "method_and_run_matrix_frozen": true,
+    "primary_r4_confirmation_plan_frozen": true,
+    "dynamic_trainer_parity_verified": true,
+    "gpu_action_preflight_verified": true,
+    "fresh_panel_manifest_available": true,
+    "fresh_panel_independent_group_count": 20,
+    "fresh_panel_powered_for_final_admission": false,
+    "fresh_panel_permitted_authority": "reject_only",
+    "sealed_h2_independent_group_count": 70,
+    "sealed_h2_meets_smallest_finite_planning_count": true,
+    "sealed_h2_current_corruption_count": 5,
+    "sealed_h2_normative_corruption_coverage_satisfied": false,
+    "sealed_h2_execution_authorized": false,
+    "powered_authorized_panel_available": false,
+    "fresh_before_only_feature_records_available": true,
+    "fresh_native_r4_prediction_receipts_available": true,
+    "fresh_preoutcome_row_count": 9760,
+    "fresh_exact_action_outcomes_available": false,
+    "gpu_visible_in_current_environment": true,
+    "gpu_access_boundary": "CUDA is visible only outside the filesystem sandbox; GPU execution requires an escalated command",
+    "ready_to_execute": false
+  }
+}

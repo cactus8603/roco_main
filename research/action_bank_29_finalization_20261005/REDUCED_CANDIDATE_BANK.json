@@ -1,0 +1,164 @@
+{
+  "schema": "roco-reduced-action-bank-candidate/v1",
+  "status": "OPENED_DEVELOPMENT_SHORTLIST_NOT_QUALIFIED_ACTIVE_BANK",
+  "authority": {
+    "production": false,
+    "scientific_qualification": false,
+    "selector_admission": false
+  },
+  "counts": {
+    "source_catalog_exact_controls": 29,
+    "reduced_candidate_families": 4,
+    "reduced_candidate_exact_controls": 10,
+    "overlap_pruned_exact_controls": 5,
+    "shadow_unqualified_exact_controls": 14,
+    "final_qualified_exact_controls": 0
+  },
+  "reduction_gate": {
+    "comparison_set": "15 optical/matcher controls on the opened E3 development panel",
+    "native_positive_only_rollback": true,
+    "overall_oracle_capacity_retention_percent_minimum": 99.5,
+    "each_corruption_oracle_capacity_retention_percent_minimum": 98.0,
+    "all_theoretically_distinct_families_required": true
+  },
+  "candidate_families": [
+    {
+      "family_id": "optical.lowpass_hf_suppression.v1",
+      "repair_space": "Suppress high-frequency corruption before matching via the Gaussian scale-space path.",
+      "exact_controls": [
+        "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+        "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+        "CSB/OF/SEA-RAFT/action/R2-gaussian-s2"
+      ]
+    },
+    {
+      "family_id": "optical.detail_recovery_unsharp.v1",
+      "repair_space": "Increase local high-frequency contrast before matching; spectrally opposite to low-pass suppression.",
+      "exact_controls": [
+        "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+        "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5"
+      ]
+    },
+    {
+      "family_id": "optical.joint_radiometry.v1",
+      "repair_space": "Restore paired radiometric dynamic range while preserving cross-view correspondence.",
+      "exact_controls": [
+        "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+        "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+        "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+        "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5"
+      ]
+    },
+    {
+      "family_id": "matcher.compute_budget.v1",
+      "repair_space": "Change matcher optimization depth without modifying the input image.",
+      "exact_controls": [
+        "CSB/OF/SEA-RAFT/action/R7-iters12"
+      ]
+    }
+  ],
+  "opened_development_result": {
+    "full_15_control_positive_oracle_mean_gain_raw_px": 0.07325686151332773,
+    "reduced_10_control_positive_oracle_mean_gain_raw_px": 0.07290759050362607,
+    "overall_capacity_retention_percent": 99.52322416974125,
+    "minimum_corruption_capacity_retention_percent": 98.43311473524746,
+    "all_selected_anchors_individually_required_for_frozen_gates": true,
+    "scene_cluster_bootstrap_overall_retention_percent_95_interval": [
+      99.07954860991195,
+      99.77067756701416
+    ]
+  },
+  "overlap_pruned_controls": [
+    {
+      "action_id": "CSB/OF/SEA-RAFT/action/V3-gaussian-s0p5",
+      "reason": "Redundant weak anchor after joint cross-family capacity search."
+    },
+    {
+      "action_id": "CSB/OF/SEA-RAFT/action/R3-unsharp-a1",
+      "reason": "Intermediate unsharp anchor covered by amount 0.5 and 1.5 anchors."
+    },
+    {
+      "action_id": "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p25",
+      "reason": "Redundant partial-delivery point after joint capacity search."
+    },
+    {
+      "action_id": "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p75",
+      "reason": "Redundant partial-delivery point after joint capacity search."
+    },
+    {
+      "action_id": "CSB/OF/SEA-RAFT/action/P4-iters8",
+      "reason": "The 12-iteration control subsumes its useful opened-panel capacity under the frozen retention gates."
+    }
+  ],
+  "shadow_mechanism_groups": [
+    {
+      "family_id": "inverse.defocus.learned.v1",
+      "actions": ["common_disk_iniknet_dpdd_v1"],
+      "disposition": "SHADOW_BLOCKED_FULL_ACTION_QUALIFICATION"
+    },
+    {
+      "family_id": "inverse.gaussian.model_based.v1",
+      "actions": ["common_gaussian_dpir_drunet_v1"],
+      "disposition": "SHADOW_BLOCKED_FULL_ACTION_QUALIFICATION"
+    },
+    {
+      "family_id": "inverse.motion.learned.v1",
+      "actions": [
+        "common_motion_irnext_gopro_v1",
+        "common_motion_nafnet_gopro_w32_tiled_v1"
+      ],
+      "disposition": "SHADOW_HEAD_TO_HEAD_UNQUALIFIED"
+    },
+    {
+      "family_id": "inverse.jpeg.learned.v1",
+      "actions": ["jpeg_swinir_q10_applicability_v1"],
+      "disposition": "SHADOW_NO_ELIGIBLE_QUALIFICATION_COHORT"
+    },
+    {
+      "family_id": "illumination.low_light.learned.v1",
+      "actions": ["illumination.low_light.retinexformer_lolv2_real.v1"],
+      "disposition": "SHADOW_NO_FRESH_TASK_ALIGNED_QUALIFICATION"
+    },
+    {
+      "family_id": "weather.defog.learned.v1",
+      "actions": [
+        "weather.defog.irnext_ots.v1",
+        "weather.defog.ridcp_real.v1"
+      ],
+      "disposition": "SHADOW_HEAD_TO_HEAD_UNQUALIFIED"
+    },
+    {
+      "family_id": "weather.defrost.correspondence_preserving.v1",
+      "actions": ["weather.defrost.layer_separation_correspondence_preserving.v1"],
+      "disposition": "SHADOW_DESCRIPTOR_ONLY_NO_EXECUTABLE_ACTION"
+    },
+    {
+      "family_id": "weather.derain.learned.v1",
+      "actions": [
+        "weather.derain.irnext_rain13k.v1",
+        "weather.derain.restormer_rain13k.v1"
+      ],
+      "disposition": "SHADOW_HEAD_TO_HEAD_UNQUALIFIED"
+    },
+    {
+      "family_id": "weather.desnow.learned.v1",
+      "actions": [
+        "weather.desnow.irnext_snow100k.v1",
+        "weather.desnow.snowformer_csd.v1"
+      ],
+      "disposition": "SHADOW_HEAD_TO_HEAD_UNQUALIFIED"
+    },
+    {
+      "family_id": "weather.despatter.correspondence_preserving.v1",
+      "actions": ["weather.despatter.masked_correspondence_preserving.v1"],
+      "disposition": "SHADOW_DESCRIPTOR_ONLY_NO_EXECUTABLE_ACTION"
+    }
+  ],
+  "admission_rule": "Only controls passing fresh component-disjoint mechanism, harm, cost, observability, and selection-aware calibration gates may move from this shortlist or shadow bank into the final active bank.",
+  "evidence": [
+    "research/action_bank_29_finalization_20261005/OPTICAL_REDUCTION_RESULT.json",
+    "experiments/E245_preselector_action_handoff_v1/RESULT_REPORT.md",
+    "docs/research/motion_psf_extended_actions_readiness_audit_20261005.md",
+    "docs/specs/extended9_action_completion_science_spec_20261005.md"
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "contract": "CSB-S05-BINARY-REVISION-v1-20260917",
+  "study": "E01/S06/S05R_robust20_binary_revision",
+  "spec": "docs/specs/s01r_robust20_revalidation_contract_v1_20260917.md",
+  "registry": "configs/stablebridge/data_models_v1.json",
+  "context_hw": [320, 384],
+  "origin_xy": [768, 380],
+  "candidate_shift_xy": [-8, 0],
+  "candidate_selection_basis": "fixed from pre-Robust20 E0 analysis; not selected on S05R holdout",
+  "profiles": {"kind": "robustspring20_proxy", "severities": [1, 2, 3]},
+  "seed": 20260917,
+  "cpu_threads": 4,
+  "cuda_memory_fraction": 0.35,
+  "training_cache": "/ssd7/cactus8603/roco_spring/robust20_e01_runs_v2/s04r_support_rematch_v1/cache",
+  "splits": {
+    "train": {"0001": [50]},
+    "calibration": {"0016": [60]},
+    "confirmation": {"0030": [60]}
+  },
+  "exposure": {
+    "previously_exposed": ["0001","0002","0004","0005","0006","0007","0008","0009","0010","0011","0012","0013","0014","0015","0018","0021","0024","0032","0037","0043","0047"],
+    "audit_path": "experiments/E01_evidence_mechanism/studies/S05_binary_revision/scene_exposure_audit.json",
+    "limitation": "tracked workspace only; external history and pretraining overlap not fully audited"
+  },
+  "model": {"hidden_dim": 128, "information": ["geometry", "full"], "objective": ["gain", "errors"], "primary": "full_gain"},
+  "descriptor_chunk": 2048,
+  "score_chunk": 16384,
+  "learning": {
+    "steps_per_model": 1000, "queries_per_step": 2048,
+    "learning_rate": 0.0003, "weight_decay": 0.0001, "gradient_clip": 1.0,
+    "target_scale_px": 20.0, "target_clipping": null,
+    "loss": "mean_squared_error_over_outputs", "seeds": [20260917, 20260918],
+    "sampling": "uniform case then uniform GT-valid pixel", "checkpoint": "final_step_only"
+  },
+  "acceptance": {
+    "max_damage_good_fraction": 0.005, "max_severe_harm_fraction": 0.001,
+    "min_update_fraction": 0.001, "min_gain_px": 0.01,
+    "min_positive_scenes": 1, "expected_scenes": 1,
+    "increment_over_baseline_px": 0.005
+  },
+  "limits": {
+    "maximum_run_minutes": 240, "maximum_scientific_runs": 1,
+    "maximum_training_steps_total": 8000, "automatic_hyperparameter_retry": false
+  },
+  "scientific_scope": "Stereo two-answer Robust20 x severity 1/2/3 learnability screen; one scene per split, no clean, flow, official-renderer or main-conference claim"
+}

@@ -1,0 +1,296 @@
+{
+  "authority": {
+    "production": false,
+    "scientific_qualification": false,
+    "selector_admission": false
+  },
+  "bootstrap": {
+    "draws": 10000,
+    "lower_percentile": 1.25,
+    "multiplicity": "Bonferroni one-sided familywise 95% lower bound across four actions",
+    "scene_count": 30,
+    "seed": 20261005,
+    "unit": "physical_scene"
+  },
+  "comparisons": {
+    "CSB/OF/SEA-RAFT/action/P1-gaussian-s1": {
+      "approximate_independent_scenes_for_80pct_power": 136,
+      "clean_scene_bootstrap_95ci_px": [
+        -0.0023719982244749635,
+        -0.0003861520444245375
+      ],
+      "corrupt_macro_bonferroni_one_sided_95pct_lower_px": -0.002230765825651578,
+      "corrupt_macro_scene_bootstrap_95ci_px": [
+        -0.0004908275023680572,
+        0.05377490094172967
+      ],
+      "loo_experiment": "E279a_selection_aware_loo_p1_v1",
+      "loo_global_gates": {
+        "catastrophe_per_intervention": 0.01272264631043257,
+        "clean_relative_degradation": 0.00022340447053308056,
+        "corrupt_conditions_improved": 3,
+        "corrupt_relative_gain_vs_native": 0.018809138883264447
+      },
+      "loo_minus_full_clean_mean_epe_px": -0.0012095052744383477,
+      "loo_minus_full_corrupt_macro_mean_epe_px": 0.020678488540746245,
+      "loo_minus_full_corrupt_macro_scene_sd_px": 0.07803821219101578,
+      "loo_predictions_sha256": "f173ca21831af4660226b53004f32f01b7a74ac2dbdde1803b368ac7abf3e4ea",
+      "oracle_capacity_nonredundancy_passes": true,
+      "oracle_corrupt_macro_bonferroni_one_sided_95pct_lower_px": 0.002767369925244214,
+      "oracle_corrupt_macro_incremental_mean_epe_px": 0.005004781284036553,
+      "oracle_corrupt_macro_scene_bootstrap_95ci_px": [
+        0.002982306885193429,
+        0.0073220412255555565
+      ],
+      "oracle_unique_strict_positive_winner_rows": 189,
+      "per_condition": {
+        "brightness-s2": {
+          "loo_minus_full_mean_epe_px": 0.002498197450306057,
+          "scene_bootstrap_95ci_px": [
+            0.0005226697164241091,
+            0.005034812392969684
+          ]
+        },
+        "gaussian-blur-s2": {
+          "loo_minus_full_mean_epe_px": -0.0006377977565466294,
+          "scene_bootstrap_95ci_px": [
+            -0.002394114690899711,
+            0.001355184717985039
+          ]
+        },
+        "gaussian-noise-s2": {
+          "loo_minus_full_mean_epe_px": 0.026050955814281806,
+          "scene_bootstrap_95ci_px": [
+            0.009727490779967592,
+            0.04615943458268357
+          ]
+        },
+        "jpeg-s2": {
+          "loo_minus_full_mean_epe_px": 0.05480259865494365,
+          "scene_bootstrap_95ci_px": [
+            -0.018118563777540595,
+            0.1737180968767775
+          ]
+        }
+      },
+      "selection_aware_nonredundancy_passes": false
+    },
+    "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1": {
+      "approximate_independent_scenes_for_80pct_power": null,
+      "clean_scene_bootstrap_95ci_px": [
+        -0.0012236181075343867,
+        0.0017112354661007528
+      ],
+      "corrupt_macro_bonferroni_one_sided_95pct_lower_px": -0.014010142249335285,
+      "corrupt_macro_scene_bootstrap_95ci_px": [
+        -0.01282330262588172,
+        0.004232115751734976
+      ],
+      "loo_experiment": "E279d_selection_aware_loo_p3_v1",
+      "loo_global_gates": {
+        "catastrophe_per_intervention": 0.0018248175182481751,
+        "clean_relative_degradation": 0.005751629050737951,
+        "corrupt_conditions_improved": 3,
+        "corrupt_relative_gain_vs_native": 0.060785251204957
+      },
+      "loo_minus_full_clean_mean_epe_px": 0.0001835746661057465,
+      "loo_minus_full_corrupt_macro_mean_epe_px": -0.0043085607558084466,
+      "loo_minus_full_corrupt_macro_scene_sd_px": 0.024407923483608075,
+      "loo_predictions_sha256": "f9a31f4514eb18f509ffb1ef112cb1255d3fb76790248e30b3763a38e6e14e34",
+      "oracle_capacity_nonredundancy_passes": true,
+      "oracle_corrupt_macro_bonferroni_one_sided_95pct_lower_px": 0.0023855181385755977,
+      "oracle_corrupt_macro_incremental_mean_epe_px": 0.0041019756596867105,
+      "oracle_corrupt_macro_scene_bootstrap_95ci_px": [
+        0.002541597996704217,
+        0.006100034836630751
+      ],
+      "oracle_unique_strict_positive_winner_rows": 305,
+      "per_condition": {
+        "brightness-s2": {
+          "loo_minus_full_mean_epe_px": 0.004876817322720694,
+          "scene_bootstrap_95ci_px": [
+            0.0024447843790237236,
+            0.007624647365384285
+          ]
+        },
+        "gaussian-blur-s2": {
+          "loo_minus_full_mean_epe_px": -0.0006980497835974584,
+          "scene_bootstrap_95ci_px": [
+            -0.0019662637043236265,
+            0.0005137999372589286
+          ]
+        },
+        "gaussian-noise-s2": {
+          "loo_minus_full_mean_epe_px": -0.0169464991855627,
+          "scene_bootstrap_95ci_px": [
+            -0.030505258695086312,
+            -0.0048954358573432295
+          ]
+        },
+        "jpeg-s2": {
+          "loo_minus_full_mean_epe_px": -0.004466511376794334,
+          "scene_bootstrap_95ci_px": [
+            -0.03147379077261931,
+            0.02198099749570265
+          ]
+        }
+      },
+      "selection_aware_nonredundancy_passes": false
+    },
+    "CSB/OF/SEA-RAFT/action/R2-gaussian-s2": {
+      "approximate_independent_scenes_for_80pct_power": 607,
+      "clean_scene_bootstrap_95ci_px": [
+        -0.0011088954490544004,
+        0.0003735609000151484
+      ],
+      "corrupt_macro_bonferroni_one_sided_95pct_lower_px": -0.014292959005577033,
+      "corrupt_macro_scene_bootstrap_95ci_px": [
+        -0.01232012254819889,
+        0.038710590548661196
+      ],
+      "loo_experiment": "E279b_selection_aware_loo_r2_v1",
+      "loo_global_gates": {
+        "catastrophe_per_intervention": 0.0,
+        "clean_relative_degradation": 0.003882031807529896,
+        "corrupt_conditions_improved": 4,
+        "corrupt_relative_gain_vs_native": 0.03825782156698998
+      },
+      "loo_minus_full_clean_mean_epe_px": -0.00028755279599768405,
+      "loo_minus_full_corrupt_macro_mean_epe_px": 0.00910130413531572,
+      "loo_minus_full_corrupt_macro_scene_sd_px": 0.07271051497403293,
+      "loo_predictions_sha256": "aee8a1235d57c4fa6f0e0aa5523848045f76b9aba77c35187a4c419949a540d8",
+      "oracle_capacity_nonredundancy_passes": true,
+      "oracle_corrupt_macro_bonferroni_one_sided_95pct_lower_px": 0.0071584673756933965,
+      "oracle_corrupt_macro_incremental_mean_epe_px": 0.021582741462248624,
+      "oracle_corrupt_macro_scene_bootstrap_95ci_px": [
+        0.008360987052356987,
+        0.04090289703346821
+      ],
+      "oracle_unique_strict_positive_winner_rows": 167,
+      "per_condition": {
+        "brightness-s2": {
+          "loo_minus_full_mean_epe_px": -0.0022636657282646615,
+          "scene_bootstrap_95ci_px": [
+            -0.004552137275289105,
+            -0.00018745267240119682
+          ]
+        },
+        "gaussian-blur-s2": {
+          "loo_minus_full_mean_epe_px": -0.002247255876702977,
+          "scene_bootstrap_95ci_px": [
+            -0.004296441710285355,
+            -0.00026128781243589815
+          ]
+        },
+        "gaussian-noise-s2": {
+          "loo_minus_full_mean_epe_px": -0.030858315372957548,
+          "scene_bootstrap_95ci_px": [
+            -0.05593705948994281,
+            -0.010246742851893012
+          ]
+        },
+        "jpeg-s2": {
+          "loo_minus_full_mean_epe_px": 0.07177445351918812,
+          "scene_bootstrap_95ci_px": [
+            -0.0027387234565737113,
+            0.18180938621001602
+          ]
+        }
+      },
+      "selection_aware_nonredundancy_passes": false
+    },
+    "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5": {
+      "approximate_independent_scenes_for_80pct_power": 65,
+      "clean_scene_bootstrap_95ci_px": [
+        -0.0024495329032589623,
+        -0.00040748707883449535
+      ],
+      "corrupt_macro_bonferroni_one_sided_95pct_lower_px": 0.006540263269034437,
+      "corrupt_macro_scene_bootstrap_95ci_px": [
+        0.007872029321196789,
+        0.06611155223240345
+      ],
+      "loo_experiment": "E279c_selection_aware_loo_r4_v1",
+      "loo_global_gates": {
+        "catastrophe_per_intervention": 0.0,
+        "clean_relative_degradation": 0.0,
+        "corrupt_conditions_improved": 0,
+        "corrupt_relative_gain_vs_native": 0.0
+      },
+      "loo_minus_full_clean_mean_epe_px": -0.0012658018814253656,
+      "loo_minus_full_corrupt_macro_mean_epe_px": 0.03187497279112299,
+      "loo_minus_full_corrupt_macro_scene_sd_px": 0.0827798772486708,
+      "loo_predictions_sha256": "679788d4a2ccf1060519710fd8d99bcddb2363424d66bfe2d57f2a1f67c16c7b",
+      "oracle_capacity_nonredundancy_passes": true,
+      "oracle_corrupt_macro_bonferroni_one_sided_95pct_lower_px": 0.0028648912326232462,
+      "oracle_corrupt_macro_incremental_mean_epe_px": 0.004890718245723602,
+      "oracle_corrupt_macro_scene_bootstrap_95ci_px": [
+        0.0030709076719558004,
+        0.007014664952830854
+      ],
+      "oracle_unique_strict_positive_winner_rows": 367,
+      "per_condition": {
+        "brightness-s2": {
+          "loo_minus_full_mean_epe_px": 0.004779971399465099,
+          "scene_bootstrap_95ci_px": [
+            0.002373621615157366,
+            0.00764395959054094
+          ]
+        },
+        "gaussian-blur-s2": {
+          "loo_minus_full_mean_epe_px": 0.0007742180870066366,
+          "scene_bootstrap_95ci_px": [
+            -0.0008663643558371049,
+            0.002639825742017964
+          ]
+        },
+        "gaussian-noise-s2": {
+          "loo_minus_full_mean_epe_px": 0.019366822922457883,
+          "scene_bootstrap_95ci_px": [
+            0.00538763831076733,
+            0.03482997617728267
+          ]
+        },
+        "jpeg-s2": {
+          "loo_minus_full_mean_epe_px": 0.10257887875556225,
+          "scene_bootstrap_95ci_px": [
+            0.01739322635625062,
+            0.22778233722483815
+          ]
+        }
+      },
+      "selection_aware_nonredundancy_passes": true
+    }
+  },
+  "estimand": "LOO CTRL-FACT loss minus full-bank CTRL-FACT loss on paired outer-OOF rows",
+  "full_bank": {
+    "catastrophe_per_intervention": 0.003289473684210526,
+    "clean_mean_epe": 0.25325989516272257,
+    "clean_relative_degradation": 0.005023141078201354,
+    "corrupt_macro_mean_epe": 0.5633933337414432,
+    "corrupt_relative_gain_vs_native": 0.053547236500451935,
+    "experiment": "E278_minimal_stable_observable_bank_v1",
+    "native_clean_mean_epe": 0.25199409328129724,
+    "native_corrupt_macro_mean_epe": 0.5952683065325661,
+    "predictions_sha256": "bf0b68bec407c9ace671ae62ed72b5d764e7b07f21cd4123440c4affa4bcde29"
+  },
+  "interpretation": "Paired retraining estimates substitution-aware incremental value, but E3 was adaptively reused and cannot provide final admission evidence.",
+  "oracle_capacity_nonredundant_actions_on_opened_e3": [
+    "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+    "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+    "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+    "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1"
+  ],
+  "positive_delta_meaning": "the full bank has lower EPE, so the excluded action adds value",
+  "power_planning_caveat": "Normal-approximation counts use opened E3 scene variance, one-sided alpha 0.05/4, and 80% power. They are planning diagnostics, not guaranteed sample sizes.",
+  "schema": "selection-aware-loo-opened-development-analysis/v1",
+  "selection_aware_nonredundant_actions_on_opened_e3": [
+    "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5"
+  ],
+  "selection_aware_rejected_actions_on_opened_e3": [
+    "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+    "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+    "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1"
+  ],
+  "status": "COMPLETE_OPENED_DEVELOPMENT_METHOD_DIAGNOSTIC"
+}

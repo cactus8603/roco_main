@@ -1,0 +1,69 @@
+{
+  "version": 7,
+  "contract": "CSB-ADAPT-v2-20260916",
+  "study": "E01/S01_spatial_repair",
+  "model_profile": "main",
+  "clips_manifest": "experiments/E01_evidence_mechanism/manifests/development_clips_v1.json",
+  "tasks": ["stereo", "flow"],
+  "frames": "center",
+  "context_hw": null,
+  "context_policy": "each official task native crop; no resize",
+  "seed": 20260916,
+  "pipeline": {
+    "mode": "M0",
+    "memory_capacity": 8,
+    "memory_bytes": 33554432,
+    "memory_reads": 2,
+    "retrieval_policy": "diversity",
+    "local_operators": ["median3", "gaussian1"],
+    "diagnostic_reverse_pairs": true,
+    "diagnostic_augmentations": ["roll_x8", "roll_y8"]
+  },
+  "matching": {
+    "max_queries": 1024,
+    "max_candidates": 24,
+    "feature_dim": 64,
+    "query_fraction": 0.1,
+    "feature_weight": 0.5,
+    "movement_penalty": 0.001,
+    "min_improvement": 0.015,
+    "max_update_px": 32.0,
+    "require_baseline_support": true
+  },
+  "profiles": [
+    {"name": "clean"},
+    {"name": "gaussian_noise", "options": {"sigma": 0.06}},
+    {"name": "persistent_overlay", "options": {"rectangle_xywh": [880, 480, 160, 120]}}
+  ],
+  "arms": ["solved"],
+  "reference_bank": ["identity", "median3", "gaussian1"],
+  "spatial_gate": {
+    "query_budget": 1024,
+    "sample_seed": 20260916,
+    "support_error_threshold_px": 1.0,
+    "wrong_support_shift_px": 128,
+    "privileged_location_definition": "min_A_ref_error_le_1px_outside_query"
+  },
+  "scenes": ["0001", "0021", "0047", "0004"],
+  "evidence_applicability_gate": {
+    "split": "fit_role_mechanism_confirmation",
+    "discovery_scenes": ["0009", "0018", "0037", "0043"],
+    "stereo_primary": "equal_rank_combined_movement_reverse_cycle_roll_y8_stability",
+    "flow_primary": "mean_roll_x8_roll_y8_stability",
+    "repair_threshold_native_px": 1.0,
+    "harm_delta_native_px": 1.0,
+    "tail_harm_delta_native_px": 5.0,
+    "missing_evidence": "retain_identity",
+    "minimum_valid_candidate_slots_pct": 80.0,
+    "minimum_oracle_scene_macro_gain_px": 0.0,
+    "minimum_primary_scene_macro_gain_px": 0.0,
+    "minimum_gain_over_combined_movement_px": 0.0,
+    "minimum_absolute_pair_ordering_pct": 55.0,
+    "minimum_positive_scenes_out_of_four": 3,
+    "require_harmful_selection_rate_not_above_combined": true,
+    "on_failure": "geometry_conditioning_alone_is_insufficient_for_shared_action_assessment"
+  },
+  "scientific_scope": "mechanism confirmation on different but previously exposed scenes; no trained controller, final-test, or temporal-repair claim",
+  "cuda_memory_fraction": 0.6
+}
+

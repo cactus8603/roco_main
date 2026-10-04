@@ -1,0 +1,57 @@
+{
+  "version": 4,
+  "study": "E01/S01_spatial_repair",
+  "model_profile": "main",
+  "clips_manifest": "experiments/E01_evidence_mechanism/manifests/development_clips_v1.json",
+  "tasks": ["stereo", "flow"],
+  "frames": "center",
+  "context_hw": null,
+  "context_policy": "each official task native crop; no resize",
+  "seed": 20260916,
+  "pipeline": {
+    "mode": "M0",
+    "memory_capacity": 8,
+    "memory_bytes": 33554432,
+    "memory_reads": 2,
+    "retrieval_policy": "diversity",
+    "local_operators": ["median3", "gaussian1"],
+    "diagnostic_reverse_pairs": true
+  },
+  "matching": {
+    "max_queries": 1024,
+    "max_candidates": 24,
+    "feature_dim": 64,
+    "query_fraction": 0.1,
+    "feature_weight": 0.5,
+    "movement_penalty": 0.001,
+    "min_improvement": 0.015,
+    "max_update_px": 32.0,
+    "require_baseline_support": true
+  },
+  "profiles": [
+    {"name": "clean"},
+    {"name": "gaussian_noise", "options": {"sigma": 0.06}},
+    {"name": "persistent_overlay", "options": {"rectangle_xywh": [880, 480, 160, 120]}}
+  ],
+  "arms": ["solved"],
+  "reference_bank": ["identity", "median3", "gaussian1"],
+  "spatial_gate": {
+    "query_budget": 1024,
+    "sample_seed": 20260916,
+    "support_error_threshold_px": 1.0,
+    "wrong_support_shift_px": 128,
+    "privileged_location_definition": "min_A_ref_error_le_1px_outside_query"
+  },
+  "scenes": ["0009", "0018", "0037", "0043"],
+  "cycle_gate": {
+    "split": "development_evaluation",
+    "minimum_valid_candidate_slots_pct": 80.0,
+    "minimum_scene_macro_gain_px": 0.0,
+    "minimum_gain_over_combined_movement_px": 0.02,
+    "minimum_pair_ordering_improvement_percentage_points": 2.0,
+    "minimum_positive_scenes_out_of_four": 3,
+    "on_failure": "do_not_use_cycle_as_shared_primary_donor_selector"
+  },
+  "scientific_scope": "development-only bidirectional-cycle mechanism gate; no threshold fitting or final-test claim",
+  "cuda_memory_fraction": 0.6
+}

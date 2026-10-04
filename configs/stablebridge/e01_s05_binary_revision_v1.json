@@ -1,0 +1,191 @@
+{
+  "version": 1,
+  "contract": "CSB-S05-BINARY-REVISION-v1-20260917",
+  "study": "E01/S05_binary_revision",
+  "spec": "docs/specs/s05_binary_revision_v1_20260917.md",
+  "registry": "configs/stablebridge/data_models_v1.json",
+  "context_hw": [
+    320,
+    384
+  ],
+  "origin_xy": [
+    768,
+    380
+  ],
+  "candidate_shift_xy": [
+    -8,
+    0
+  ],
+  "candidate_selection_basis": "already-exposed S01-S04 analysis; not prospective selection on new confirmation",
+  "profiles": [
+    {
+      "name": "clean"
+    },
+    {
+      "name": "gaussian_noise",
+      "options": {
+        "sigma": 0.06
+      }
+    },
+    {
+      "name": "persistent_overlay",
+      "options": {
+        "rectangle_xywh": [
+          880,
+          480,
+          160,
+          120
+        ]
+      }
+    }
+  ],
+  "seed": 20260917,
+  "cpu_threads": 4,
+  "cuda_memory_fraction": 0.35,
+  "training_cache": "experiments/E01_evidence_mechanism/studies/S04_support_conditioned_rematching/runs/support_rematch_v1_gpu6/cache",
+  "splits": {
+    "train": {
+      "0001": [
+        46,
+        50,
+        54
+      ],
+      "0021": [
+        56,
+        60,
+        64
+      ],
+      "0047": [
+        50,
+        54,
+        58
+      ],
+      "0004": [
+        45,
+        49,
+        53
+      ],
+      "0014": [
+        75,
+        79,
+        83
+      ],
+      "0032": [
+        32,
+        36,
+        40
+      ],
+      "0007": [
+        70,
+        74,
+        78
+      ],
+      "0024": [
+        28,
+        32,
+        36
+      ]
+    },
+    "calibration": {
+      "0016": [
+        60
+      ],
+      "0020": [
+        60
+      ],
+      "0023": [
+        60
+      ],
+      "0025": [
+        60
+      ]
+    },
+    "confirmation": {
+      "0030": [
+        60
+      ],
+      "0033": [
+        60
+      ],
+      "0036": [
+        60
+      ],
+      "0038": [
+        60
+      ]
+    }
+  },
+  "exposure": {
+    "previously_exposed": [
+      "0001",
+      "0002",
+      "0004",
+      "0005",
+      "0006",
+      "0007",
+      "0008",
+      "0009",
+      "0010",
+      "0011",
+      "0012",
+      "0013",
+      "0014",
+      "0015",
+      "0018",
+      "0021",
+      "0024",
+      "0032",
+      "0037",
+      "0043",
+      "0047"
+    ],
+    "audit_path": "experiments/E01_evidence_mechanism/studies/S05_binary_revision/scene_exposure_audit.json",
+    "limitation": "workspace tracked metadata only; external history and upstream pretraining overlap not fully audited"
+  },
+  "model": {
+    "hidden_dim": 128,
+    "information": [
+      "geometry",
+      "full"
+    ],
+    "objective": [
+      "gain",
+      "errors"
+    ],
+    "primary": "full_gain"
+  },
+  "descriptor_chunk": 2048,
+  "score_chunk": 16384,
+  "learning": {
+    "steps_per_model": 2000,
+    "queries_per_step": 2048,
+    "learning_rate": 0.0003,
+    "weight_decay": 0.0001,
+    "gradient_clip": 1.0,
+    "target_scale_px": 20.0,
+    "target_clipping": null,
+    "loss": "mean_squared_error_over_outputs",
+    "seeds": [
+      20260917,
+      20260918
+    ],
+    "sampling": "uniform_case_then_uniform_GT_valid_native_pixel_with_replacement; no error/eligibility/Q importance sampling",
+    "checkpoint": "final_step_only"
+  },
+  "acceptance": {
+    "max_damage_good_fraction": 0.005,
+    "max_severe_harm_fraction": 0.001,
+    "min_update_fraction": 0.001,
+    "min_gain_px": 0.01,
+    "min_positive_scenes": 3,
+    "expected_scenes": 4,
+    "increment_over_baseline_px": 0.005
+  },
+  "limits": {
+    "maximum_run_minutes": 90,
+    "maximum_scientific_runs": 1,
+    "maximum_training_steps_total": 16000,
+    "automatic_hyperparameter_retry": false
+  },
+  "scientific_scope": "Stereo-only two-answer learnability screen under empirical harm limits; frozen CroCo v2; one crop and three synthetic profiles; no confidence calibration, roll causal, flow, buffer, or main-conference novelty claim"
+}

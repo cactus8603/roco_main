@@ -1,0 +1,61 @@
+{
+  "version": 5,
+  "contract": "CSB-ADAPT-v2-20260916",
+  "study": "E01/S01_spatial_repair",
+  "model_profile": "main",
+  "clips_manifest": "experiments/E01_evidence_mechanism/manifests/development_clips_v1.json",
+  "tasks": ["stereo", "flow"],
+  "frames": "center",
+  "context_hw": null,
+  "seed": 20260916,
+  "pipeline": {
+    "mode": "M0",
+    "memory_capacity": 2,
+    "memory_bytes": 33554432,
+    "memory_reads": 0,
+    "retrieval_policy": "fifo",
+    "local_operators": ["median3", "gaussian1"],
+    "diagnostic_reverse_pairs": true,
+    "diagnostic_augmentations": ["roll_x8", "roll_y8"]
+  },
+  "matching": {
+    "max_queries": 64,
+    "max_candidates": 24,
+    "feature_dim": 64,
+    "query_fraction": 0.02,
+    "feature_weight": 0.5,
+    "movement_penalty": 0.001,
+    "min_improvement": 0.015,
+    "max_update_px": 32.0,
+    "require_baseline_support": true
+  },
+  "profiles": [{"name": "clean"}],
+  "arms": ["solved"],
+  "reference_bank": ["identity", "median3", "gaussian1"],
+  "spatial_gate": {
+    "query_budget": 64,
+    "sample_seed": 20260916,
+    "support_error_threshold_px": 1.0,
+    "wrong_support_shift_px": 128,
+    "privileged_location_definition": "min_A_ref_error_le_1px_outside_query"
+  },
+  "scenes": ["0009"],
+  "action_response_gate": {
+    "split": "smoke_only",
+    "repair_threshold_native_px": 1.0,
+    "harm_delta_native_px": 1.0,
+    "tail_harm_delta_native_px": 5.0,
+    "aggregation": "equal_candidate_rank_of_combined_movement_cycle_and_mean_translation_stability",
+    "missing_evidence": "retain_identity",
+    "minimum_valid_candidate_slots_pct": 0.0,
+    "minimum_oracle_scene_macro_gain_px": 0.0,
+    "minimum_rank_aggregate_scene_macro_gain_px": 0.0,
+    "minimum_gain_over_combined_movement_px": 0.0,
+    "minimum_pair_ordering_improvement_percentage_points": 0.0,
+    "minimum_positive_scenes_out_of_four": 0,
+    "require_harmful_selection_rate_not_above_combined": false,
+    "on_failure": "smoke_only_no_scientific_decision"
+  },
+  "scientific_scope": "engineering smoke only; no scientific decision",
+  "cuda_memory_fraction": 0.6
+}

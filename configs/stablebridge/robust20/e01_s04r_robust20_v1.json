@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "contract": "CSB-S04-SUPPORT-REMATCH-v1-20260917",
+  "study": "E01/S06/S04R_robust20_support_rematch",
+  "spec": "docs/specs/s01r_robust20_revalidation_contract_v1_20260917.md",
+  "registry": "configs/stablebridge/data_models_v1.json",
+  "model_profile": "main",
+  "context_hw": [320, 384],
+  "origin_xy": [768, 380],
+  "operators": ["identity", "median3", "gaussian1"],
+  "rematch_shifts_xy": [[8,0],[-8,0],[0,8],[0,-8],[16,0],[-16,0],[0,16],[0,-16],[8,8]],
+  "profiles": {"kind": "robustspring20_proxy", "severities": [1, 2, 3]},
+  "seed": 20260917,
+  "cpu_threads": 4,
+  "cuda_memory_fraction": 0.25,
+  "splits": {
+    "train": {"0001": [50]},
+    "development": {"0009": [61]},
+    "calibration": {"0010": [60]},
+    "confirmation": {"0012": [60]}
+  },
+  "exposure": {
+    "prior_project_design_scenes": ["0001","0004","0007","0009","0014","0018","0021","0024","0032","0037","0043","0047"],
+    "new_scene_scope": "absent from tracked E01 design manifests; pretrained overlap not fully audited",
+    "calibration_role": "fixed checkpoint audit; no threshold selection",
+    "confirmation_policy": "one-shot after training; no automatic retry"
+  },
+  "support": {
+    "spacing_px": 32, "offset_px": 15, "count": 120, "nearest": 4,
+    "exclude_radius_px": 8.0,
+    "processed_estimator": "coordinatewise_median_of_valid_strong_E0",
+    "wrong_permutation": "cyclic_shift_half_support_count", "gt_branch": 0
+  },
+  "model": {
+    "feature_channels": 1024, "hidden_dim": 96, "projected_dim": 32,
+    "nearest_supports": 4, "query_chunk_size": 1024,
+    "min_support_distance_px": 8.0, "residual_bound_px": 2.0
+  },
+  "search": {"candidates_per_query": 30, "independent_slots": 10, "support_slots": 20, "learned_residual_bound_px": 2.0},
+  "learning": {
+    "steps_per_model": 750, "queries_per_step": 1024,
+    "learning_rate": 0.0003, "weight_decay": 0.0001, "gradient_clip": 1.0,
+    "candidate_ce_weight": 0.1,
+    "models": ["no_support", "actual", "gt_diagnostic", "propagation"],
+    "actual_support_cycle": ["raw", "processed", "wrong"],
+    "checkpoint": "final_step_only", "task_weights": "separate",
+    "seeds": [20260917],
+    "query_sampling": "uniform native pixels; no Q/error sampling"
+  },
+  "evaluation": {
+    "threshold_px": 1.0, "severe_harm_px": 3.0, "tail_harm_px": 5.0,
+    "all_valid_dense": true,
+    "arms": ["identity","e0_processed_dense","no_support","raw","processed","wrong","gt_diagnostic","propagation_raw","propagation_processed","propagation_wrong"],
+    "candidate_oracle_diagnostic": true, "save_dense_outputs": true
+  },
+  "gate": {
+    "minimum_Q_per_task": 1000, "minimum_Q_per_scene": 100,
+    "minimum_supported_scenes": 1, "required_scenes": 1, "minimum_positive_scenes": 1,
+    "vs_no_support_Q_gain_px": 0.05, "vs_no_support_Q_gain_fraction": 0.05,
+    "vs_no_support_repair_gain_pp": 2.0, "processed_vs_raw_Q_gain_px": 0.02,
+    "processed_vs_wrong_Q_gain_px": 0.02, "processed_vs_wrong_repair_gain_pp": 1.0,
+    "processed_vs_propagation_Q_gain_px": 0.02, "processed_vs_propagation_repair_gain_pp": 1.0,
+    "maximum_all_error_increase_px": 0.01, "maximum_initial_good_damage_pct": 1.0,
+    "maximum_severe_harm_pct": 0.5
+  },
+  "limits": {
+    "maximum_run_hours": 36, "minimum_free_disk_gb": 40,
+    "training_outside_codex_session": true, "preferred_gpu": 6,
+    "no_automatic_hyperparameter_retries": true
+  },
+  "scientific_scope": "Bounded Robust20 x severity 1/2/3 support-rematching screen; one scene per split, no official-renderer or significance claim",
+  "old_S02_composer_status": "archived_unchanged"
+}

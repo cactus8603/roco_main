@@ -1,0 +1,150 @@
+{
+  "contract_id": "CSB-ARCH-v1-20260916",
+  "research_spec_id": "CSB-STE-v1-20260916",
+  "status": "runtime_v1_implemented",
+  "execution_ready": true,
+  "research_spec_snapshot": "docs/specs/STABLEBRIDGE_SPATIOTEMPORAL_EVIDENCE_SPEC_v1_20260916_ZH.md",
+  "research_spec_sha256": "233f1a83379665ee737f00610532a7a012957a012fa4436c151525e1cca7e207",
+  "shared_core": "src/stablebridge",
+  "configuration_root": "configs/stablebridge",
+  "experiment_root": "experiments",
+  "pipeline": [
+    "sequence_provider",
+    "backbone_adapter",
+    "query_manager",
+    "evidence_and_association",
+    "index_probe_read_trigger",
+    "proposal_rematcher",
+    "output_acceptor",
+    "support_revision"
+  ],
+  "sharing": {
+    "architecture": "one_common_pipeline",
+    "backbone": "same_CroCo_v2_architecture_separate_frozen_task_checkpoints",
+    "new_learned_modules": "shared_by_default_task_geometry_conditioned",
+    "separate_module_weights": "explicit_ablation_only",
+    "joint_backbone_training": "deferred"
+  },
+  "primary_modes": [
+    "M0",
+    "M1"
+  ],
+  "extensions": [
+    "M2",
+    "M3"
+  ],
+  "default_external_segmentation_or_tracker": false,
+  "test_time_weight_update": false,
+  "query_identity": [
+    "sequence_namespace",
+    "source_view",
+    "source_frame",
+    "target_view",
+    "target_frame",
+    "native_xy"
+  ],
+  "time_snapshot": [
+    "earliest_publish_event",
+    "information_cutoff_event",
+    "compute_deadline",
+    "scored_output_version"
+  ],
+  "geometry": {
+    "coordinate_order": "xy",
+    "pixel_centers": "zero_based_integer",
+    "units": "native_pixels",
+    "candidate_authority": "target_xy_native",
+    "stereo_displacement": "(-d,0)",
+    "flow_displacement": "(u,v)",
+    "per_endpoint_transforms_required": true,
+    "padding_is_observation": false
+  },
+  "temporal_constraint": "F(a->r)(p) ~= u + F(b->r)(p+u), with observed associations and visibility checks",
+  "evidence_cost_stages": [
+    "index",
+    "probe",
+    "read_rematch"
+  ],
+  "dependencies": {
+    "versioned": true,
+    "bounded_source_groups": true,
+    "independence_claim": false,
+    "stale_sources_stop_unverified_propagation": true,
+    "deadline_fallback": "last_not_invalidated_estimate_else_U0_with_low_support"
+  },
+  "oracle_scopes": [
+    "decision_candidates_at_snapshot",
+    "posthoc_union_generated_before_deadline"
+  ],
+  "evaluation": {
+    "tau_primary_native_px": 1.0,
+    "spring_metric": "min_of_four_native_error",
+    "gt_resolution_rescale": false,
+    "aggregation": "scene_macro_after_predeclared_within_scene_weights",
+    "task_metrics_reported_separately": true,
+    "H_star_bound_to_reference_model_context_A": true
+  },
+  "run_artifacts": [
+    "manifest.json",
+    "source",
+    "logs",
+    "checkpoints",
+    "predictions",
+    "decisions",
+    "metrics"
+  ],
+  "run_status": "E01_development_pilot_completed",
+  "unresolved_execution_parameters": [],
+  "bound_runtime_defaults": {
+    "models": "official main artifacts SHA256 registered",
+    "context_hw": {
+      "stereo": [
+        352,
+        704
+      ],
+      "flow": [
+        320,
+        384
+      ]
+    },
+    "feature_layer": "last encoder after enc_norm before decoder",
+    "feature_projection": {
+      "kind": "shared fixed Gaussian then L2",
+      "dimensions": 64,
+      "seed": 20260916
+    },
+    "query_budget": 1024,
+    "candidate_budget": 24,
+    "memory_records": 8,
+    "memory_feature_bytes": 33554432,
+    "history_reads": 2,
+    "memory_policy": "diversity",
+    "reference_A": [
+      "identity",
+      "median3",
+      "gaussian1"
+    ],
+    "corruption_profiles": [
+      "clean",
+      "gaussian_noise",
+      "persistent_overlay",
+      "recovery"
+    ],
+    "acceptor": "shared signed-gain and >1px-harm model; fit/calibration scenes separated; reject-all admissible",
+    "configuration_files": [
+      "configs/stablebridge/e01_s01_spatial_v1.json",
+      "configs/stablebridge/e01_s02_temporal_pilot_v1.json",
+      "configs/stablebridge/e01_s02_temporal_full_v1.json",
+      "configs/stablebridge/e01_s03_source_control_v1.json"
+    ]
+  },
+  "research_questions_not_engineering_blockers": [
+    "whether proposed evidence improves fixed H* on both tasks",
+    "whether learned acceptance beats identity without excess harm",
+    "full long-horizon memory/revision and contour/partial-constraint comparisons",
+    "final exposure-checked splits and second-matcher generalization"
+  ],
+  "runtime_spec": "docs/specs/stablebridge_runtime_v1_20260916.md",
+  "scientific_success": false,
+  "results": "experiments/E01_evidence_mechanism/reports/e01_runtime_results_20260916.md"
+}

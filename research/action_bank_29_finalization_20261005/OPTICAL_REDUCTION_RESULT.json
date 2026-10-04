@@ -1,0 +1,1519 @@
+{
+  "authority": {
+    "production": false,
+    "scientific_qualification": false,
+    "selector_admission": false
+  },
+  "families": {
+    "detail_recovery_unsharp": {
+      "leave_one_action_out": {
+        "CSB/OF/SEA-RAFT/action/P2-unsharp-s1": {
+          "absolute_positive_oracle_loss_raw_px": 0.00034361483018090916,
+          "relative_family_capacity_loss_percent": 1.8784687735876473
+        },
+        "CSB/OF/SEA-RAFT/action/R3-unsharp-a1": {
+          "absolute_positive_oracle_loss_raw_px": 0.00039952793890698016,
+          "relative_family_capacity_loss_percent": 2.1841337785609127
+        },
+        "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5": {
+          "absolute_positive_oracle_loss_raw_px": 0.005107178079694869,
+          "relative_family_capacity_loss_percent": 27.919850079832646
+        }
+      },
+      "members": [
+        "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+        "CSB/OF/SEA-RAFT/action/R3-unsharp-a1",
+        "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5"
+      ],
+      "recommended_strength_subset": {
+        "by_condition": {
+          "brightness-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.0022003381715134432,
+            "retention_percent": 100.0,
+            "selected_positive_oracle_mean_gain_raw_px": 0.0022003381715134432
+          },
+          "gaussian-blur-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.005228174848395191,
+            "retention_percent": 100.00000000000001,
+            "selected_positive_oracle_mean_gain_raw_px": 0.005228174848395191
+          },
+          "gaussian-noise-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.004955184873592906,
+            "retention_percent": 100.0,
+            "selected_positive_oracle_mean_gain_raw_px": 0.004955184873592906
+          },
+          "jpeg-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.06078543539470246,
+            "retention_percent": 100.0,
+            "selected_positive_oracle_mean_gain_raw_px": 0.06078543539470246
+          }
+        },
+        "full_positive_oracle_mean_gain_raw_px": 0.018292283322051,
+        "minimum_condition_retention_percent": 100.0,
+        "overall_retention_percent": 100.0,
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+          "CSB/OF/SEA-RAFT/action/R3-unsharp-a1",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5"
+        ],
+        "selected_count": 3,
+        "selected_positive_oracle_mean_gain_raw_px": 0.018292283322051
+      }
+    },
+    "joint_radiometry": {
+      "leave_one_action_out": {
+        "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1": {
+          "absolute_positive_oracle_loss_raw_px": 0.00042009997680125463,
+          "relative_family_capacity_loss_percent": 1.3959296004615456
+        },
+        "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1": {
+          "absolute_positive_oracle_loss_raw_px": 0.0017552608280194983,
+          "relative_family_capacity_loss_percent": 5.832470082525703
+        },
+        "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5": {
+          "absolute_positive_oracle_loss_raw_px": 0.009837406650603266,
+          "relative_family_capacity_loss_percent": 32.68823588117217
+        },
+        "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p25": {
+          "absolute_positive_oracle_loss_raw_px": 8.679206195869732e-05,
+          "relative_family_capacity_loss_percent": 0.28839708417921583
+        },
+        "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5": {
+          "absolute_positive_oracle_loss_raw_px": 0.000144979289608424,
+          "relative_family_capacity_loss_percent": 0.48174456794609755
+        },
+        "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p75": {
+          "absolute_positive_oracle_loss_raw_px": 8.702627100895532e-05,
+          "relative_family_capacity_loss_percent": 0.289175325940714
+        }
+      },
+      "members": [
+        "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p25",
+        "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+        "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p75",
+        "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+        "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+        "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5"
+      ],
+      "recommended_strength_subset": {
+        "by_condition": {
+          "brightness-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.013579545651991699,
+            "retention_percent": 98.97436646623159,
+            "selected_positive_oracle_mean_gain_raw_px": 0.013440269278051482
+          },
+          "gaussian-blur-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.006534868258278557,
+            "retention_percent": 98.84359701795131,
+            "selected_positive_oracle_mean_gain_raw_px": 0.00645929884686687
+          },
+          "gaussian-noise-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.0111095315373202,
+            "retention_percent": 99.5293618689854,
+            "selected_positive_oracle_mean_gain_raw_px": 0.011057245845728479
+          },
+          "jpeg-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.08915461136855678,
+            "retention_percent": 99.90917619868536,
+            "selected_positive_oracle_mean_gain_raw_px": 0.08907363776146456
+          }
+        },
+        "full_positive_oracle_mean_gain_raw_px": 0.030094639204036804,
+        "minimum_condition_retention_percent": 98.84359701795131,
+        "overall_retention_percent": 99.71082467405928,
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p25",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5"
+        ],
+        "selected_count": 5,
+        "selected_positive_oracle_mean_gain_raw_px": 0.03000761293302785
+      }
+    },
+    "lowpass_hf_suppression": {
+      "leave_one_action_out": {
+        "CSB/OF/SEA-RAFT/action/P1-gaussian-s1": {
+          "absolute_positive_oracle_loss_raw_px": 0.0018478292135137298,
+          "relative_family_capacity_loss_percent": 3.3002829411947863
+        },
+        "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5": {
+          "absolute_positive_oracle_loss_raw_px": 0.0002925325632378989,
+          "relative_family_capacity_loss_percent": 0.5224726512263518
+        },
+        "CSB/OF/SEA-RAFT/action/R2-gaussian-s2": {
+          "absolute_positive_oracle_loss_raw_px": 0.016655508330175463,
+          "relative_family_capacity_loss_percent": 29.74727838320179
+        },
+        "CSB/OF/SEA-RAFT/action/V3-gaussian-s0p5": {
+          "absolute_positive_oracle_loss_raw_px": 0.0004970797144777453,
+          "relative_family_capacity_loss_percent": 0.8878005013165621
+        }
+      },
+      "members": [
+        "CSB/OF/SEA-RAFT/action/V3-gaussian-s0p5",
+        "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+        "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+        "CSB/OF/SEA-RAFT/action/R2-gaussian-s2"
+      ],
+      "recommended_strength_subset": {
+        "by_condition": {
+          "brightness-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.0009658497471799003,
+            "retention_percent": 100.0,
+            "selected_positive_oracle_mean_gain_raw_px": 0.0009658497471799003
+          },
+          "gaussian-blur-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.0003632545779780964,
+            "retention_percent": 100.00000000000001,
+            "selected_positive_oracle_mean_gain_raw_px": 0.0003632545779780964
+          },
+          "gaussian-noise-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.0746132125249444,
+            "retention_percent": 100.0,
+            "selected_positive_oracle_mean_gain_raw_px": 0.0746132125249444
+          },
+          "jpeg-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.14801777947361078,
+            "retention_percent": 100.0,
+            "selected_positive_oracle_mean_gain_raw_px": 0.14801777947361078
+          }
+        },
+        "full_positive_oracle_mean_gain_raw_px": 0.055990024080928305,
+        "minimum_condition_retention_percent": 100.0,
+        "overall_retention_percent": 100.0,
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/V3-gaussian-s0p5",
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2"
+        ],
+        "selected_count": 4,
+        "selected_positive_oracle_mean_gain_raw_px": 0.055990024080928305
+      }
+    },
+    "matcher_compute": {
+      "leave_one_action_out": {
+        "CSB/OF/SEA-RAFT/action/P4-iters8": {
+          "absolute_positive_oracle_loss_raw_px": 0.0008215871590208004,
+          "relative_family_capacity_loss_percent": 5.161406926933341
+        },
+        "CSB/OF/SEA-RAFT/action/R7-iters12": {
+          "absolute_positive_oracle_loss_raw_px": 0.003376411190833966,
+          "relative_family_capacity_loss_percent": 21.211422205424803
+        }
+      },
+      "members": [
+        "CSB/OF/SEA-RAFT/action/P4-iters8",
+        "CSB/OF/SEA-RAFT/action/R7-iters12"
+      ],
+      "recommended_strength_subset": {
+        "by_condition": {
+          "brightness-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.004068540791138592,
+            "retention_percent": 100.0,
+            "selected_positive_oracle_mean_gain_raw_px": 0.004068540791138592
+          },
+          "gaussian-blur-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.005259092473921803,
+            "retention_percent": 100.0,
+            "selected_positive_oracle_mean_gain_raw_px": 0.005259092473921803
+          },
+          "gaussian-noise-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.040956287003405506,
+            "retention_percent": 100.0,
+            "selected_positive_oracle_mean_gain_raw_px": 0.040956287003405506
+          },
+          "jpeg-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.013387646081676374,
+            "retention_percent": 100.0,
+            "selected_positive_oracle_mean_gain_raw_px": 0.013387646081676374
+          }
+        },
+        "full_positive_oracle_mean_gain_raw_px": 0.01591789158753557,
+        "minimum_condition_retention_percent": 100.0,
+        "overall_retention_percent": 100.0,
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P4-iters8",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 2,
+        "selected_positive_oracle_mean_gain_raw_px": 0.01591789158753557
+      }
+    }
+  },
+  "family_count_frontier": [
+    {
+      "condition_retention_percent": {
+        "brightness-s2": 6.6665808757802925,
+        "gaussian-blur-s2": 3.241668773401852,
+        "gaussian-noise-s2": 84.25958970127392,
+        "jpeg-s2": 82.79226912860663
+      },
+      "families": [
+        "lowpass_hf_suppression"
+      ],
+      "minimum_condition_retention_percent": 3.241668773401852,
+      "overall_retention_percent": 76.42973357620835
+    },
+    {
+      "condition_retention_percent": {
+        "brightness-s2": 93.78394782711673,
+        "gaussian-blur-s2": 58.905999862849846,
+        "gaussian-noise-s2": 89.18173369626821,
+        "jpeg-s2": 95.04464721261115
+      },
+      "families": [
+        "lowpass_hf_suppression",
+        "joint_radiometry"
+      ],
+      "minimum_condition_retention_percent": 58.905999862849846,
+      "overall_retention_percent": 91.82857523442391
+    },
+    {
+      "condition_retention_percent": {
+        "brightness-s2": 96.7146349442057,
+        "gaussian-blur-s2": 86.2741126166742,
+        "gaussian-noise-s2": 91.15856100084149,
+        "jpeg-s2": 99.70330365642187
+      },
+      "families": [
+        "lowpass_hf_suppression",
+        "detail_recovery_unsharp",
+        "joint_radiometry"
+      ],
+      "minimum_condition_retention_percent": 86.2741126166742,
+      "overall_retention_percent": 96.45980226553395
+    },
+    {
+      "condition_retention_percent": {
+        "brightness-s2": 100.0,
+        "gaussian-blur-s2": 100.0,
+        "gaussian-noise-s2": 99.99999999999999,
+        "jpeg-s2": 100.0
+      },
+      "families": [
+        "lowpass_hf_suppression",
+        "detail_recovery_unsharp",
+        "joint_radiometry",
+        "matcher_compute"
+      ],
+      "minimum_condition_retention_percent": 99.99999999999999,
+      "overall_retention_percent": 100.0
+    }
+  ],
+  "fixed_condition_response": {
+    "CSB/OF/SEA-RAFT/action/P1-gaussian-s1": {
+      "clean_mean_gain_raw_px": -0.002499415115090094,
+      "clean_relative_gain_percent": -0.9918546433150062,
+      "target_condition_mean_gain_raw_px": {
+        "brightness-s2": -0.0043425279296167105,
+        "gaussian-blur-s2": -0.0031034893197228806,
+        "gaussian-noise-s2": 0.062469538032365865,
+        "jpeg-s2": 0.006794832302937168
+      }
+    },
+    "CSB/OF/SEA-RAFT/action/P2-unsharp-s1": {
+      "clean_mean_gain_raw_px": 0.0002426637202309078,
+      "clean_relative_gain_percent": 0.09629738422480641,
+      "target_condition_mean_gain_raw_px": {
+        "brightness-s2": 0.0005533542513914577,
+        "gaussian-blur-s2": 0.001580024905904224,
+        "gaussian-noise-s2": -0.08667565325129732,
+        "jpeg-s2": 0.019982944112384972
+      }
+    },
+    "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1": {
+      "clean_mean_gain_raw_px": -0.004099934987304132,
+      "clean_relative_gain_percent": -1.626996464051019,
+      "target_condition_mean_gain_raw_px": {
+        "brightness-s2": 0.010955412877984742,
+        "gaussian-blur-s2": -0.003127089550704685,
+        "gaussian-noise-s2": -0.017351079341650165,
+        "jpeg-s2": 0.02916484825116404
+      }
+    },
+    "CSB/OF/SEA-RAFT/action/P4-iters8": {
+      "clean_mean_gain_raw_px": -0.0012019614517905447,
+      "clean_relative_gain_percent": -0.4769800101817519,
+      "target_condition_mean_gain_raw_px": {
+        "brightness-s2": 0.0021716078915438235,
+        "gaussian-blur-s2": 0.0032311234853723207,
+        "gaussian-noise-s2": 0.028948558283321376,
+        "jpeg-s2": -0.023371913384037345
+      }
+    },
+    "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5": {
+      "clean_mean_gain_raw_px": -0.007404321620004335,
+      "clean_relative_gain_percent": -2.938291736758688,
+      "target_condition_mean_gain_raw_px": {
+        "brightness-s2": -0.014012294776073993,
+        "gaussian-blur-s2": -0.007183638532672934,
+        "gaussian-noise-s2": 0.04539867876698492,
+        "jpeg-s2": 0.06952034969828273
+      }
+    },
+    "CSB/OF/SEA-RAFT/action/R2-gaussian-s2": {
+      "clean_mean_gain_raw_px": -0.015187500295392734,
+      "clean_relative_gain_percent": -6.026927098818605,
+      "target_condition_mean_gain_raw_px": {
+        "brightness-s2": -0.02745239591862751,
+        "gaussian-blur-s2": -0.012497579319528457,
+        "gaussian-noise-s2": 0.02453489228643478,
+        "jpeg-s2": 0.14030571667143696
+      }
+    },
+    "CSB/OF/SEA-RAFT/action/R3-unsharp-a1": {
+      "clean_mean_gain_raw_px": -0.0006916408823298981,
+      "clean_relative_gain_percent": -0.27446710092439747,
+      "target_condition_mean_gain_raw_px": {
+        "brightness-s2": 0.00015095868312976632,
+        "gaussian-blur-s2": 0.0033582466570722335,
+        "gaussian-noise-s2": -0.22985156511803978,
+        "jpeg-s2": 0.03900837640502231
+      }
+    },
+    "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5": {
+      "clean_mean_gain_raw_px": -0.002336992772989745,
+      "clean_relative_gain_percent": -0.9273998221779729,
+      "target_condition_mean_gain_raw_px": {
+        "brightness-s2": -0.0010379564434999636,
+        "gaussian-blur-s2": 0.005120428578212181,
+        "gaussian-noise-s2": -0.4152250380805279,
+        "jpeg-s2": 0.05556628117206785
+      }
+    },
+    "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1": {
+      "clean_mean_gain_raw_px": -0.010790406176721815,
+      "clean_relative_gain_percent": -4.282007580501757,
+      "target_condition_mean_gain_raw_px": {
+        "brightness-s2": 0.006148853237745281,
+        "gaussian-blur-s2": -0.01812665612683257,
+        "gaussian-noise-s2": -0.044535421126976144,
+        "jpeg-s2": -0.05412794652812611
+      }
+    },
+    "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5": {
+      "clean_mean_gain_raw_px": -0.013534475805808376,
+      "clean_relative_gain_percent": -5.370949624085055,
+      "target_condition_mean_gain_raw_px": {
+        "brightness-s2": 0.0033615545948939775,
+        "gaussian-blur-s2": -0.012104204949467531,
+        "gaussian-noise-s2": -0.02623382223929867,
+        "jpeg-s2": 0.05702160881874572
+      }
+    },
+    "CSB/OF/SEA-RAFT/action/R7-iters12": {
+      "clean_mean_gain_raw_px": -0.002483050710519372,
+      "clean_relative_gain_percent": -0.9853606797630691,
+      "target_condition_mean_gain_raw_px": {
+        "brightness-s2": 0.0015350271120511446,
+        "gaussian-blur-s2": 0.003110959903935081,
+        "gaussian-noise-s2": 0.03399856332271039,
+        "jpeg-s2": -0.04615881502560405
+      }
+    },
+    "CSB/OF/SEA-RAFT/action/V3-gaussian-s0p5": {
+      "clean_mean_gain_raw_px": -6.674881682891267e-05,
+      "clean_relative_gain_percent": -0.02648824659330486,
+      "target_condition_mean_gain_raw_px": {
+        "brightness-s2": -0.0009053080256829275,
+        "gaussian-blur-s2": -0.0006752516297479954,
+        "gaussian-noise-s2": 0.03533265834359784,
+        "jpeg-s2": -0.012498716718383575
+      }
+    },
+    "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p25": {
+      "clean_mean_gain_raw_px": -0.0005405761043354237,
+      "clean_relative_gain_percent": -0.21451935531361319,
+      "target_condition_mean_gain_raw_px": {
+        "brightness-s2": 0.008303800185788655,
+        "gaussian-blur-s2": 0.001097931263780093,
+        "gaussian-noise-s2": -0.006801516831589898,
+        "jpeg-s2": 0.00453044927559611
+      }
+    },
+    "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5": {
+      "clean_mean_gain_raw_px": -0.002000581983098123,
+      "clean_relative_gain_percent": -0.7939003478406549,
+      "target_condition_mean_gain_raw_px": {
+        "brightness-s2": 0.010963990377932498,
+        "gaussian-blur-s2": 0.0009472530142194633,
+        "gaussian-noise-s2": -0.011453629517725937,
+        "jpeg-s2": 0.012145924077885003
+      }
+    },
+    "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p75": {
+      "clean_mean_gain_raw_px": -0.002950983920492468,
+      "clean_relative_gain_percent": -1.1710528140031955,
+      "target_condition_mean_gain_raw_px": {
+        "brightness-s2": 0.011338631134179721,
+        "gaussian-blur-s2": -0.0009289644720151848,
+        "gaussian-noise-s2": -0.014902887481822781,
+        "jpeg-s2": 0.020854320511841377
+      }
+    }
+  },
+  "full_15_arm_positive_oracle_mean_gain_raw_px": 0.07325686151332773,
+  "gates": {
+    "native_positive_only_rollback": true,
+    "strength_subset_each_condition_retention_percent": 98.0,
+    "strength_subset_overall_capacity_retention_percent": 99.5
+  },
+  "global_exact_control_reduction": {
+    "best_minimum_condition_retention_by_control_count": [
+      {
+        "condition_retention_percent": {
+          "brightness-s2": 48.94962930963544,
+          "gaussian-blur-s2": 31.561713741824004,
+          "gaussian-noise-s2": 11.941635909459714,
+          "jpeg-s2": 42.67793477058558
+        },
+        "minimum_condition_retention_percent": 11.941635909459714,
+        "overall_retention_percent": 33.27454768323319,
+        "represented_families": [
+          "joint_radiometry"
+        ],
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5"
+        ],
+        "selected_count": 1
+      },
+      {
+        "condition_retention_percent": {
+          "brightness-s2": 58.96661122614315,
+          "gaussian-blur-s2": 60.75454497680235,
+          "gaussian-noise-s2": 47.87707372837959,
+          "jpeg-s2": 45.978615846610424
+        },
+        "minimum_condition_retention_percent": 45.978615846610424,
+        "overall_retention_percent": 47.759529675993036,
+        "represented_families": [
+          "joint_radiometry",
+          "matcher_compute"
+        ],
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 2
+      },
+      {
+        "condition_retention_percent": {
+          "brightness-s2": 67.86628993118298,
+          "gaussian-blur-s2": 67.4955104280975,
+          "gaussian-noise-s2": 70.74349944117256,
+          "jpeg-s2": 66.94203507173962
+        },
+        "minimum_condition_retention_percent": 66.94203507173962,
+        "overall_retention_percent": 68.15768369820263,
+        "represented_families": [
+          "detail_recovery_unsharp",
+          "joint_radiometry",
+          "lowpass_hf_suppression"
+        ],
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1"
+        ],
+        "selected_count": 3
+      },
+      {
+        "condition_retention_percent": {
+          "brightness-s2": 90.2355452104519,
+          "gaussian-blur-s2": 83.2882571667266,
+          "gaussian-noise-s2": 80.21240594674538,
+          "jpeg-s2": 94.74794353962523
+        },
+        "minimum_condition_retention_percent": 80.21240594674538,
+        "overall_retention_percent": 89.69403051286457,
+        "represented_families": [
+          "detail_recovery_unsharp",
+          "joint_radiometry",
+          "lowpass_hf_suppression",
+          "matcher_compute"
+        ],
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 4
+      },
+      {
+        "condition_retention_percent": {
+          "brightness-s2": 91.96481931420581,
+          "gaussian-blur-s2": 83.90938485677651,
+          "gaussian-noise-s2": 96.68294293989449,
+          "jpeg-s2": 94.17452390349771
+        },
+        "minimum_condition_retention_percent": 83.90938485677651,
+        "overall_retention_percent": 94.43075066658379,
+        "represented_families": [
+          "detail_recovery_unsharp",
+          "joint_radiometry",
+          "lowpass_hf_suppression",
+          "matcher_compute"
+        ],
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p75",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 5
+      },
+      {
+        "condition_retention_percent": {
+          "brightness-s2": 93.31786321918754,
+          "gaussian-blur-s2": 93.6743886632737,
+          "gaussian-noise-s2": 97.30074223054784,
+          "jpeg-s2": 98.20431114409577
+        },
+        "minimum_condition_retention_percent": 93.31786321918754,
+        "overall_retention_percent": 97.51642897029426,
+        "represented_families": [
+          "detail_recovery_unsharp",
+          "joint_radiometry",
+          "lowpass_hf_suppression",
+          "matcher_compute"
+        ],
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p75",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 6
+      },
+      {
+        "condition_retention_percent": {
+          "brightness-s2": 95.23430172697563,
+          "gaussian-blur-s2": 97.54049378023409,
+          "gaussian-noise-s2": 97.30760511828984,
+          "jpeg-s2": 99.81657736885776
+        },
+        "minimum_condition_retention_percent": 95.23430172697563,
+        "overall_retention_percent": 98.7447783995984,
+        "represented_families": [
+          "detail_recovery_unsharp",
+          "joint_radiometry",
+          "lowpass_hf_suppression",
+          "matcher_compute"
+        ],
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p75",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 7
+      },
+      {
+        "condition_retention_percent": {
+          "brightness-s2": 98.39554061931119,
+          "gaussian-blur-s2": 98.82333981265369,
+          "gaussian-noise-s2": 97.31405804367374,
+          "jpeg-s2": 99.77478707059714
+        },
+        "minimum_condition_retention_percent": 97.31405804367374,
+        "overall_retention_percent": 98.92658791226759,
+        "represented_families": [
+          "detail_recovery_unsharp",
+          "joint_radiometry",
+          "lowpass_hf_suppression",
+          "matcher_compute"
+        ],
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 8
+      },
+      {
+        "condition_retention_percent": {
+          "brightness-s2": 98.41195381765927,
+          "gaussian-blur-s2": 98.82333981265369,
+          "gaussian-noise-s2": 98.37049434796575,
+          "jpeg-s2": 99.7980175588469
+        },
+        "minimum_condition_retention_percent": 98.37049434796575,
+        "overall_retention_percent": 99.26082319593328,
+        "represented_families": [
+          "detail_recovery_unsharp",
+          "joint_radiometry",
+          "lowpass_hf_suppression",
+          "matcher_compute"
+        ],
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 9
+      },
+      {
+        "condition_retention_percent": {
+          "brightness-s2": 98.63405121078215,
+          "gaussian-blur-s2": 99.50530156997404,
+          "gaussian-noise-s2": 98.85189329931413,
+          "jpeg-s2": 99.80069015898886
+        },
+        "minimum_condition_retention_percent": 98.63405121078215,
+        "overall_retention_percent": 99.4449906241901,
+        "represented_families": [
+          "detail_recovery_unsharp",
+          "joint_radiometry",
+          "lowpass_hf_suppression",
+          "matcher_compute"
+        ],
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/P4-iters8",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 10
+      },
+      {
+        "condition_retention_percent": {
+          "brightness-s2": 99.37770711689417,
+          "gaussian-blur-s2": 99.31270790427277,
+          "gaussian-noise-s2": 98.99880870805917,
+          "jpeg-s2": 99.84242116724427
+        },
+        "minimum_condition_retention_percent": 98.99880870805917,
+        "overall_retention_percent": 99.54425171905568,
+        "represented_families": [
+          "detail_recovery_unsharp",
+          "joint_radiometry",
+          "lowpass_hf_suppression",
+          "matcher_compute"
+        ],
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/V3-gaussian-s0p5",
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p75",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 11
+      },
+      {
+        "condition_retention_percent": {
+          "brightness-s2": 99.59805642851016,
+          "gaussian-blur-s2": 99.99466966159312,
+          "gaussian-noise-s2": 99.43736855133822,
+          "jpeg-s2": 99.84509376738626
+        },
+        "minimum_condition_retention_percent": 99.43736855133822,
+        "overall_retention_percent": 99.71538692939816,
+        "represented_families": [
+          "detail_recovery_unsharp",
+          "joint_radiometry",
+          "lowpass_hf_suppression",
+          "matcher_compute"
+        ],
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/V3-gaussian-s0p5",
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p75",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/P4-iters8",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 12
+      },
+      {
+        "condition_retention_percent": {
+          "brightness-s2": 99.60713209725692,
+          "gaussian-blur-s2": 99.9951169159048,
+          "gaussian-noise-s2": 99.90520729988755,
+          "jpeg-s2": 99.99927081333882
+        },
+        "minimum_condition_retention_percent": 99.60713209725692,
+        "overall_retention_percent": 99.9512981692861,
+        "represented_families": [
+          "detail_recovery_unsharp",
+          "joint_radiometry",
+          "lowpass_hf_suppression",
+          "matcher_compute"
+        ],
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/V3-gaussian-s0p5",
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p75",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/P4-iters8",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 13
+      },
+      {
+        "condition_retention_percent": {
+          "brightness-s2": 100.0,
+          "gaussian-blur-s2": 99.9998626560365,
+          "gaussian-noise-s2": 99.90520729988755,
+          "jpeg-s2": 99.99927081333882
+        },
+        "minimum_condition_retention_percent": 99.90520729988755,
+        "overall_retention_percent": 99.97090392143153,
+        "represented_families": [
+          "detail_recovery_unsharp",
+          "joint_radiometry",
+          "lowpass_hf_suppression",
+          "matcher_compute"
+        ],
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/V3-gaussian-s0p5",
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p25",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p75",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/P4-iters8",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 14
+      },
+      {
+        "condition_retention_percent": {
+          "brightness-s2": 100.0,
+          "gaussian-blur-s2": 100.0,
+          "gaussian-noise-s2": 99.99999999999999,
+          "jpeg-s2": 100.0
+        },
+        "minimum_condition_retention_percent": 99.99999999999999,
+        "overall_retention_percent": 100.0,
+        "represented_families": [
+          "detail_recovery_unsharp",
+          "joint_radiometry",
+          "lowpass_hf_suppression",
+          "matcher_compute"
+        ],
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/V3-gaussian-s0p5",
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+          "CSB/OF/SEA-RAFT/action/R3-unsharp-a1",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p25",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p75",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/P4-iters8",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 15
+      }
+    ],
+    "minimum_passing_subset": {
+      "all_families_represented": true,
+      "by_condition": {
+        "brightness-s2": {
+          "full_positive_oracle_mean_gain_raw_px": 0.014487932647586039,
+          "retention_percent": 98.43311473524746,
+          "selected_positive_oracle_mean_gain_raw_px": 0.01426092336576374
+        },
+        "gaussian-blur-s2": {
+          "full_positive_oracle_mean_gain_raw_px": 0.011205789467407308,
+          "retention_percent": 98.82378706696538,
+          "selected_positive_oracle_mean_gain_raw_px": 0.011073985522443033
+        },
+        "gaussian-noise-s2": {
+          "full_positive_oracle_mean_gain_raw_px": 0.08855159725969604,
+          "retention_percent": 98.92401341218144,
+          "selected_positive_oracle_mean_gain_raw_px": 0.0875987939498826
+        },
+        "jpeg-s2": {
+          "full_positive_oracle_mean_gain_raw_px": 0.17878212667862153,
+          "retention_percent": 99.95219460479946,
+          "selected_positive_oracle_mean_gain_raw_px": 0.1786966591764149
+        }
+      },
+      "full_positive_oracle_mean_gain_raw_px": 0.07325686151332773,
+      "minimum_condition_retention_percent": 98.43311473524746,
+      "overall_retention_percent": 99.52322416974125,
+      "represented_families": [
+        "detail_recovery_unsharp",
+        "joint_radiometry",
+        "lowpass_hf_suppression",
+        "matcher_compute"
+      ],
+      "selected": [
+        "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+        "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+        "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+        "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+        "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+        "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+        "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+        "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+        "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+        "CSB/OF/SEA-RAFT/action/R7-iters12"
+      ],
+      "selected_count": 10,
+      "selected_positive_oracle_mean_gain_raw_px": 0.07290759050362607
+    },
+    "minimum_passing_subset_with_all_families": {
+      "all_families_represented": true,
+      "by_condition": {
+        "brightness-s2": {
+          "full_positive_oracle_mean_gain_raw_px": 0.014487932647586039,
+          "retention_percent": 98.43311473524746,
+          "selected_positive_oracle_mean_gain_raw_px": 0.01426092336576374
+        },
+        "gaussian-blur-s2": {
+          "full_positive_oracle_mean_gain_raw_px": 0.011205789467407308,
+          "retention_percent": 98.82378706696538,
+          "selected_positive_oracle_mean_gain_raw_px": 0.011073985522443033
+        },
+        "gaussian-noise-s2": {
+          "full_positive_oracle_mean_gain_raw_px": 0.08855159725969604,
+          "retention_percent": 98.92401341218144,
+          "selected_positive_oracle_mean_gain_raw_px": 0.0875987939498826
+        },
+        "jpeg-s2": {
+          "full_positive_oracle_mean_gain_raw_px": 0.17878212667862153,
+          "retention_percent": 99.95219460479946,
+          "selected_positive_oracle_mean_gain_raw_px": 0.1786966591764149
+        }
+      },
+      "full_positive_oracle_mean_gain_raw_px": 0.07325686151332773,
+      "minimum_condition_retention_percent": 98.43311473524746,
+      "overall_retention_percent": 99.52322416974125,
+      "represented_families": [
+        "detail_recovery_unsharp",
+        "joint_radiometry",
+        "lowpass_hf_suppression",
+        "matcher_compute"
+      ],
+      "selected": [
+        "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+        "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+        "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+        "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+        "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+        "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+        "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+        "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+        "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+        "CSB/OF/SEA-RAFT/action/R7-iters12"
+      ],
+      "selected_count": 10,
+      "selected_positive_oracle_mean_gain_raw_px": 0.07290759050362607
+    }
+  },
+  "interpretation": "Capacity and overlap evidence for reducing exact arms into family/strength grids. Fresh component-disjoint safety and observable routing remain required.",
+  "population": {
+    "conditions": {
+      "brightness-s2": 240,
+      "clean": 240,
+      "gaussian-blur-s2": 240,
+      "gaussian-noise-s2": 240,
+      "jpeg-s2": 240
+    },
+    "outcome_status": "OPENED_E3_DEVELOPMENT_DIAGNOSTIC",
+    "rows": 1200,
+    "scenes": 30
+  },
+  "schema": "roco-action-bank-29-optical-reduction/v2",
+  "selected_subset_necessity": {
+    "all_selected_anchors_individually_required_for_frozen_gates": true,
+    "leave_one_selected_anchor_out": {
+      "CSB/OF/SEA-RAFT/action/P1-gaussian-s1": {
+        "by_condition": {
+          "brightness-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.014487932647586039,
+            "retention_percent": 98.39994197854706,
+            "selected_positive_oracle_mean_gain_raw_px": 0.014256117319115639
+          },
+          "gaussian-blur-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.011205789467407308,
+            "retention_percent": 98.77119361474215,
+            "selected_positive_oracle_mean_gain_raw_px": 0.011068092010913256
+          },
+          "gaussian-noise-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.08855159725969604,
+            "retention_percent": 90.65022155706893,
+            "selected_positive_oracle_mean_gain_raw_px": 0.08027221910823783
+          },
+          "jpeg-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.17878212667862153,
+            "retention_percent": 99.94003055770325,
+            "selected_positive_oracle_mean_gain_raw_px": 0.17867491203432612
+          }
+        },
+        "full_positive_oracle_mean_gain_raw_px": 0.07325686151332773,
+        "minimum_condition_retention_percent": 90.65022155706893,
+        "overall_retention_percent": 97.01184796896975,
+        "passes_reduction_gates": false,
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 9,
+        "selected_positive_oracle_mean_gain_raw_px": 0.07106783511814821,
+        "unique_positive_winner_mean_gain_raw_px": 0.08701924614489087,
+        "unique_positive_winner_rows": 104
+      },
+      "CSB/OF/SEA-RAFT/action/P2-unsharp-s1": {
+        "by_condition": {
+          "brightness-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.014487932647586039,
+            "retention_percent": 98.41195381765927,
+            "selected_positive_oracle_mean_gain_raw_px": 0.014257857586275954
+          },
+          "gaussian-blur-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.011205789467407308,
+            "retention_percent": 98.82333981265369,
+            "selected_positive_oracle_mean_gain_raw_px": 0.01107393540406648
+          },
+          "gaussian-noise-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.08855159725969604,
+            "retention_percent": 98.37049434796575,
+            "selected_positive_oracle_mean_gain_raw_px": 0.08710864397738269
+          },
+          "jpeg-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.17878212667862153,
+            "retention_percent": 99.7980175588469,
+            "selected_positive_oracle_mean_gain_raw_px": 0.17842101817481062
+          }
+        },
+        "full_positive_oracle_mean_gain_raw_px": 0.07325686151332773,
+        "minimum_condition_retention_percent": 98.37049434796575,
+        "overall_retention_percent": 99.26082319593328,
+        "passes_reduction_gates": false,
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 9,
+        "selected_positive_oracle_mean_gain_raw_px": 0.07271536378563394,
+        "unique_positive_winner_mean_gain_raw_px": 0.02532194539396135,
+        "unique_positive_winner_rows": 13
+      },
+      "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1": {
+        "by_condition": {
+          "brightness-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.014487932647586039,
+            "retention_percent": 94.70022571962747,
+            "selected_positive_oracle_mean_gain_raw_px": 0.01372010491937158
+          },
+          "gaussian-blur-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.011205789467407308,
+            "retention_percent": 98.30233241880775,
+            "selected_positive_oracle_mean_gain_raw_px": 0.011015552412402478
+          },
+          "gaussian-noise-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.08855159725969604,
+            "retention_percent": 98.91361048511887,
+            "selected_positive_oracle_mean_gain_raw_px": 0.08758958199180693
+          },
+          "jpeg-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.17878212667862153,
+            "retention_percent": 99.91149274036609,
+            "selected_positive_oracle_mean_gain_raw_px": 0.17862389151758304
+          }
+        },
+        "full_positive_oracle_mean_gain_raw_px": 0.07325686151332773,
+        "minimum_condition_retention_percent": 94.70022571962747,
+        "overall_retention_percent": 99.29074383982147,
+        "passes_reduction_gates": false,
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 9,
+        "selected_positive_oracle_mean_gain_raw_px": 0.072737282710291,
+        "unique_positive_winner_mean_gain_raw_px": 0.015470643829603201,
+        "unique_positive_winner_rows": 86
+      },
+      "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5": {
+        "by_condition": {
+          "brightness-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.014487932647586039,
+            "retention_percent": 98.41670153689938,
+            "selected_positive_oracle_mean_gain_raw_px": 0.014258545432641757
+          },
+          "gaussian-blur-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.011205789467407308,
+            "retention_percent": 98.82378706696538,
+            "selected_positive_oracle_mean_gain_raw_px": 0.011073985522443033
+          },
+          "gaussian-noise-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.08855159725969604,
+            "retention_percent": 97.86757710788943,
+            "selected_positive_oracle_mean_gain_raw_px": 0.08666330272840073
+          },
+          "jpeg-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.17878212667862153,
+            "retention_percent": 99.9289641165497,
+            "selected_positive_oracle_mean_gain_raw_px": 0.17865512721548413
+          }
+        },
+        "full_positive_oracle_mean_gain_raw_px": 0.07325686151332773,
+        "minimum_condition_retention_percent": 97.86757710788943,
+        "overall_retention_percent": 99.18898888607556,
+        "passes_reduction_gates": false,
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 9,
+        "selected_positive_oracle_mean_gain_raw_px": 0.07266274022474241,
+        "unique_positive_winner_mean_gain_raw_px": 0.16354224199849265,
+        "unique_positive_winner_rows": 25
+      },
+      "CSB/OF/SEA-RAFT/action/R2-gaussian-s2": {
+        "by_condition": {
+          "brightness-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.014487932647586039,
+            "retention_percent": 98.43311473524746,
+            "selected_positive_oracle_mean_gain_raw_px": 0.01426092336576374
+          },
+          "gaussian-blur-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.011205789467407308,
+            "retention_percent": 98.82378706696538,
+            "selected_positive_oracle_mean_gain_raw_px": 0.011073985522443033
+          },
+          "gaussian-noise-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.08855159725969604,
+            "retention_percent": 97.51632353997016,
+            "selected_positive_oracle_mean_gain_raw_px": 0.08635226208357655
+          },
+          "jpeg-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.17878212667862153,
+            "retention_percent": 75.79005692598494,
+            "selected_positive_oracle_mean_gain_raw_px": 0.13549907558321378
+          }
+        },
+        "full_positive_oracle_mean_gain_raw_px": 0.07325686151332773,
+        "minimum_condition_retention_percent": 75.79005692598494,
+        "overall_retention_percent": 84.35600483308518,
+        "passes_reduction_gates": false,
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 9,
+        "selected_positive_oracle_mean_gain_raw_px": 0.06179656163874927,
+        "unique_positive_winner_mean_gain_raw_px": 0.3035208625032482,
+        "unique_positive_winner_rows": 114
+      },
+      "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5": {
+        "by_condition": {
+          "brightness-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.014487932647586039,
+            "retention_percent": 95.78123146987376,
+            "selected_positive_oracle_mean_gain_raw_px": 0.013876720304383795
+          },
+          "gaussian-blur-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.011205789467407308,
+            "retention_percent": 84.3947596945483,
+            "selected_positive_oracle_mean_gain_raw_px": 0.009457099092895402
+          },
+          "gaussian-noise-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.08855159725969604,
+            "retention_percent": 98.85510129472637,
+            "selected_positive_oracle_mean_gain_raw_px": 0.08753777116917066
+          },
+          "jpeg-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.17878212667862153,
+            "retention_percent": 96.30206222953927,
+            "selected_positive_oracle_mean_gain_raw_px": 0.17217087488933983
+          }
+        },
+        "full_positive_oracle_mean_gain_raw_px": 0.07325686151332773,
+        "minimum_condition_retention_percent": 84.3947596945483,
+        "overall_retention_percent": 96.59247598407397,
+        "passes_reduction_gates": false,
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 9,
+        "selected_positive_oracle_mean_gain_raw_px": 0.07076061636394741,
+        "unique_positive_winner_mean_gain_raw_px": 0.025859045830391315,
+        "unique_positive_winner_rows": 193
+      },
+      "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1": {
+        "by_condition": {
+          "brightness-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.014487932647586039,
+            "retention_percent": 97.5403601117391,
+            "selected_positive_oracle_mean_gain_raw_px": 0.01413158167720164
+          },
+          "gaussian-blur-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.011205789467407308,
+            "retention_percent": 95.14982592786055,
+            "selected_positive_oracle_mean_gain_raw_px": 0.010662289172080586
+          },
+          "gaussian-noise-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.08855159725969604,
+            "retention_percent": 98.91932729429435,
+            "selected_positive_oracle_mean_gain_raw_px": 0.0875946443176441
+          },
+          "jpeg-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.17878212667862153,
+            "retention_percent": 98.52289035817091,
+            "selected_positive_oracle_mean_gain_raw_px": 0.1761413186475845
+          }
+        },
+        "full_positive_oracle_mean_gain_raw_px": 0.07325686151332773,
+        "minimum_condition_retention_percent": 95.14982592786055,
+        "overall_retention_percent": 98.46512253395478,
+        "passes_reduction_gates": false,
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 9,
+        "selected_positive_oracle_mean_gain_raw_px": 0.07213245845362772,
+        "unique_positive_winner_mean_gain_raw_px": 0.028793161260137277,
+        "unique_positive_winner_rows": 101
+      },
+      "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5": {
+        "by_condition": {
+          "brightness-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.014487932647586039,
+            "retention_percent": 98.115313907838,
+            "selected_positive_oracle_mean_gain_raw_px": 0.014214880595935186
+          },
+          "gaussian-blur-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.011205789467407308,
+            "retention_percent": 89.50342660132684,
+            "selected_positive_oracle_mean_gain_raw_px": 0.010029565551060113
+          },
+          "gaussian-noise-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.08855159725969604,
+            "retention_percent": 98.3294327868463,
+            "selected_positive_oracle_mean_gain_raw_px": 0.08707228330915165
+          },
+          "jpeg-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.17878212667862153,
+            "retention_percent": 96.86324176035103,
+            "selected_positive_oracle_mean_gain_raw_px": 0.17317416358901022
+          }
+        },
+        "full_positive_oracle_mean_gain_raw_px": 0.07325686151332773,
+        "minimum_condition_retention_percent": 89.50342660132684,
+        "overall_retention_percent": 97.08677356912132,
+        "passes_reduction_gates": false,
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 9,
+        "selected_positive_oracle_mean_gain_raw_px": 0.07112272326128928,
+        "unique_positive_winner_mean_gain_raw_px": 0.054776044237593705,
+        "unique_positive_winner_rows": 99
+      },
+      "CSB/OF/SEA-RAFT/action/R7-iters12": {
+        "by_condition": {
+          "brightness-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.014487932647586039,
+            "retention_percent": 95.01269877859274,
+            "selected_positive_oracle_mean_gain_raw_px": 0.013765375805696319
+          },
+          "gaussian-blur-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.011205789467407308,
+            "retention_percent": 85.71176737932191,
+            "selected_positive_oracle_mean_gain_raw_px": 0.009604680201320707
+          },
+          "gaussian-noise-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.08855159725969604,
+            "retention_percent": 89.1484462839717,
+            "selected_positive_oracle_mean_gain_raw_px": 0.07894237311665907
+          },
+          "jpeg-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.17878212667862153,
+            "retention_percent": 99.65817086136332,
+            "selected_positive_oracle_mean_gain_raw_px": 0.17817099727495964
+          }
+        },
+        "full_positive_oracle_mean_gain_raw_px": 0.07325686151332773,
+        "minimum_condition_retention_percent": 85.71176737932191,
+        "overall_retention_percent": 95.71916561959421,
+        "passes_reduction_gates": false,
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5"
+        ],
+        "selected_count": 9,
+        "selected_positive_oracle_mean_gain_raw_px": 0.07012085659965894,
+        "unique_positive_winner_mean_gain_raw_px": 0.04195187192068428,
+        "unique_positive_winner_rows": 140
+      },
+      "CSB/OF/SEA-RAFT/action/V3-radiometric-blend-l0p5": {
+        "by_condition": {
+          "brightness-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.014487932647586039,
+            "retention_percent": 92.6593941968524,
+            "selected_positive_oracle_mean_gain_raw_px": 0.013424430622901223
+          },
+          "gaussian-blur-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.011205789467407308,
+            "retention_percent": 96.56938507522378,
+            "selected_positive_oracle_mean_gain_raw_px": 0.01082136198149943
+          },
+          "gaussian-noise-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.08855159725969604,
+            "retention_percent": 98.92401341218144,
+            "selected_positive_oracle_mean_gain_raw_px": 0.0875987939498826
+          },
+          "jpeg-s2": {
+            "full_positive_oracle_mean_gain_raw_px": 0.17878212667862153,
+            "retention_percent": 99.95219460479946,
+            "selected_positive_oracle_mean_gain_raw_px": 0.1786966591764149
+          }
+        },
+        "full_positive_oracle_mean_gain_raw_px": 0.07325686151332773,
+        "minimum_condition_retention_percent": 92.6593941968524,
+        "overall_retention_percent": 99.1515469434353,
+        "passes_reduction_gates": false,
+        "selected": [
+          "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+          "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+          "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+          "CSB/OF/SEA-RAFT/action/P2-unsharp-s1",
+          "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+          "CSB/OF/SEA-RAFT/action/P3-joint-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+          "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+          "CSB/OF/SEA-RAFT/action/R7-iters12"
+        ],
+        "selected_count": 9,
+        "selected_positive_oracle_mean_gain_raw_px": 0.07263531143267454,
+        "unique_positive_winner_mean_gain_raw_px": 0.01862259558207242,
+        "unique_positive_winner_rows": 75
+      }
+    }
+  },
+  "selected_subset_scene_cluster_bootstrap": {
+    "condition_retention_percent_intervals": {
+      "brightness-s2": {
+        "median": 98.42652473110974,
+        "p2_5": 97.36368634024558,
+        "p97_5": 99.26543597383021
+      },
+      "gaussian-blur-s2": {
+        "median": 98.84971425170959,
+        "p2_5": 97.84006843585217,
+        "p97_5": 99.5281243385884
+      },
+      "gaussian-noise-s2": {
+        "median": 98.96809323688618,
+        "p2_5": 97.83239639521858,
+        "p97_5": 99.58524187777502
+      },
+      "jpeg-s2": {
+        "median": 99.95625180554282,
+        "p2_5": 99.81215209299272,
+        "p97_5": 99.99933246304873
+      }
+    },
+    "draws": 2000,
+    "interpretation": "Fixed-subset stability diagnostic on opened development data; it is not fresh qualification and does not correct subset-selection optimism.",
+    "overall_retention_percent_interval": {
+      "median": 99.53872454327819,
+      "p2_5": 99.07954860991195,
+      "p97_5": 99.77067756701416
+    },
+    "seed": 20261005,
+    "selection_refit_inside_draw": false,
+    "unit": "scene"
+  },
+  "source": {
+    "catalog": {
+      "path": "experiments/E243_restoration_candidate_integration_v1/FROZEN_ACTION_BANK.json",
+      "sha256": "dd8e4616ba9f480c1636247c4ac16f05e0f621af72ca2edb433210f2ce65f90f"
+    },
+    "inventory": {
+      "path": "/ssd7/cactus8603/roco_spring/optical-flow-track/outputs/action-family-v3/sea-raft-action-inventory-v3.2.json",
+      "sha256": "05c59a59ceba9f0a559bcbe1a189d030e74f715d90555328097e810ff233290d"
+    },
+    "records": [
+      {
+        "path": "/ssd7/cactus8603/roco_spring/optical-flow-track/outputs/action-headroom-recovery/sea-raft-proxy-recovery-v2b-fold0.records.jsonl",
+        "sha256": "95d4980e6cea2478979a680a8ef7d6b9d263bc410c64f15fe3972d18b0aad0ff",
+        "source": "recovery"
+      },
+      {
+        "path": "/ssd7/cactus8603/roco_spring/optical-flow-track/outputs/action-headroom-recovery/sea-raft-proxy-recovery-v2b-fold1.records.jsonl",
+        "sha256": "a4c85778f0cda00e6bf20719900ff38f1e770da9bd3baf20ee438f6ae8cb487f",
+        "source": "recovery"
+      },
+      {
+        "path": "/ssd7/cactus8603/roco_spring/optical-flow-track/outputs/action-headroom-recovery/sea-raft-proxy-recovery-v2b-fold2.records.jsonl",
+        "sha256": "8218960b484d51a26cdecd0cc0fa0879582e0e69a62d5edb9660d0b32b91903e",
+        "source": "recovery"
+      },
+      {
+        "path": "/ssd7/cactus8603/roco_spring/optical-flow-track/outputs/action-headroom-recovery/sea-raft-proxy-recovery-v2b-fold3.records.jsonl",
+        "sha256": "39c9236657c967d3bc3f297ba222a9d23da07998801024e9447a2d9fb40e9388",
+        "source": "recovery"
+      },
+      {
+        "path": "/ssd7/cactus8603/roco_spring/optical-flow-track/outputs/action-headroom-recovery/sea-raft-proxy-recovery-v2b-fold4.records.jsonl",
+        "sha256": "5c151a15adf394a64dcd3e1c8b95d8d3fd585e577acdcb8666400953fa28ff84",
+        "source": "recovery"
+      },
+      {
+        "path": "/ssd7/cactus8603/roco_spring/optical-flow-track/outputs/action-headroom-recovery/sea-raft-proxy-recovery-v2b-fold5.records.jsonl",
+        "sha256": "0a80fd25622958c9dd6cc97190997ff803e80754f106ae893745471d10fa1479",
+        "source": "recovery"
+      },
+      {
+        "path": "/ssd7/cactus8603/roco_spring/optical-flow-track/outputs/action-family-v3/sea-raft-action-family-v3-fold0.records.jsonl",
+        "sha256": "d997d1f7f7d4afbc222cd360c1964e7f22064ce6e37822d458244d4b2475403e",
+        "source": "v3"
+      },
+      {
+        "path": "/ssd7/cactus8603/roco_spring/optical-flow-track/outputs/action-family-v3/sea-raft-action-family-v3-fold1.records.jsonl",
+        "sha256": "b569b2d351a7f739316bddcccf0e8d45a5feca529bf4b3ffa35ab6ce834957fb",
+        "source": "v3"
+      },
+      {
+        "path": "/ssd7/cactus8603/roco_spring/optical-flow-track/outputs/action-family-v3/sea-raft-action-family-v3-fold2.records.jsonl",
+        "sha256": "62e5c55a840b262f26131957116075c4c3c90d223a736c1620812df00bb4656f",
+        "source": "v3"
+      },
+      {
+        "path": "/ssd7/cactus8603/roco_spring/optical-flow-track/outputs/action-family-v3/sea-raft-action-family-v3-fold3.records.jsonl",
+        "sha256": "38aaf61d28d78d82c3543c56ea3efed88d2862961db904e54ee2eb83a603c198",
+        "source": "v3"
+      },
+      {
+        "path": "/ssd7/cactus8603/roco_spring/optical-flow-track/outputs/action-family-v3/sea-raft-action-family-v3-fold4.records.jsonl",
+        "sha256": "b025813871526a81952422b074e4de2574e25de5a132738a4479f4513627552e",
+        "source": "v3"
+      },
+      {
+        "path": "/ssd7/cactus8603/roco_spring/optical-flow-track/outputs/action-family-v3/sea-raft-action-family-v3-fold5.records.jsonl",
+        "sha256": "c54f8b4508feea40608be0118dfea6d50cde2d65e032f637be131639175c941f",
+        "source": "v3"
+      }
+    ]
+  },
+  "status": "PASS_OPENED_DEVELOPMENT_REDUCTION_NO_SELECTOR_AUTHORITY"
+}

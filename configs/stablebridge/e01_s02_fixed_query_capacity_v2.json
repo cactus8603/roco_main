@@ -1,0 +1,184 @@
+{
+  "version": 2,
+  "contract": "CSB-S02-FIXED-QUERY-v2-20260917",
+  "study": "E01/S02_temporal_evidence",
+  "registry": "configs/stablebridge/data_models_v1.json",
+  "spec": "docs/specs/s02_fixed_query_four_edge_capacity_v2_20260916.md",
+  "model_profile": "main",
+  "context_hw": [
+    320,
+    384
+  ],
+  "origin_xy": [
+    768,
+    380
+  ],
+  "context_policy": "common central native-pixel crop; no resize; stereo crop differs from pretrained crop; recompute C0 and Q",
+  "seed": 20260917,
+  "operators": [
+    "identity",
+    "median3",
+    "gaussian1"
+  ],
+  "path_operator_tuples": [
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      1,
+      1
+    ],
+    [
+      0,
+      2,
+      2
+    ],
+    [
+      1,
+      0,
+      1
+    ],
+    [
+      1,
+      1,
+      2
+    ],
+    [
+      1,
+      2,
+      0
+    ],
+    [
+      2,
+      0,
+      2
+    ],
+    [
+      2,
+      1,
+      0
+    ],
+    [
+      2,
+      2,
+      1
+    ]
+  ],
+  "rematch_shifts_xy": [
+    [
+      8,
+      0
+    ],
+    [
+      -8,
+      0
+    ],
+    [
+      0,
+      8
+    ],
+    [
+      0,
+      -8
+    ],
+    [
+      16,
+      0
+    ],
+    [
+      -16,
+      0
+    ],
+    [
+      0,
+      16
+    ],
+    [
+      0,
+      -16
+    ],
+    [
+      8,
+      8
+    ]
+  ],
+  "wrong_middle_shift_xy": [
+    64,
+    32
+  ],
+  "wrong_control_seed": 20260917,
+  "wrong_control_policy": "deterministic cyclic spatial reassociation of middle field; no stochastic draw",
+  "threshold_px": 1.0,
+  "epipolar_tolerance_px": 1.0,
+  "harm_delta_px": 1.0,
+  "tail_delta_px": 5.0,
+  "scene_frames": [
+    [
+      "0009",
+      61
+    ],
+    [
+      "0018",
+      55
+    ],
+    [
+      "0037",
+      39
+    ],
+    [
+      "0043",
+      45
+    ]
+  ],
+  "profiles": [
+    {
+      "name": "clean"
+    },
+    {
+      "name": "gaussian_noise",
+      "options": {
+        "sigma": 0.06
+      }
+    },
+    {
+      "name": "persistent_overlay",
+      "options": {
+        "rectangle_xywh": [
+          880,
+          480,
+          160,
+          120
+        ]
+      }
+    }
+  ],
+  "cpu_threads": 4,
+  "cuda_memory_fraction": 0.17,
+  "scientific_gate": true,
+  "gate": {
+    "minimum_queries": 1000,
+    "minimum_computable_coverage_pct": 30.0,
+    "minimum_repair_rate_pct": 5.0,
+    "minimum_positive_scenes": 3,
+    "required_scenes": 4,
+    "wrong_max_fraction_of_primary": 0.5,
+    "minimum_primary_minus_wrong_common_eligible_pp": 0.0,
+    "minimum_paired_delta_px": 0.0,
+    "cost_ratio_bounds": [
+      0.8,
+      1.25
+    ]
+  },
+  "scientific_scope": "development mechanism screening, no significance, safe-selection or calibrated trust claim",
+  "timing_policy": "synchronized per-call wall time includes operator, forward, transfers, transforms; path adds composition; warmup validation, model loading, IO and wrong/GT diagnostics separate; standalone full charge with separate physical joint cache ledger",
+  "latency_policy": {
+    "stereo_extra_wait_frames": 1,
+    "flow_extra_wait_frames": 0,
+    "physical_fps_verified": false
+  },
+  "gt_diagnostic": "fixed branch0 per edge, actual BW_right(t+1), not a physical upper bound",
+  "artifact_compression": "none"
+}

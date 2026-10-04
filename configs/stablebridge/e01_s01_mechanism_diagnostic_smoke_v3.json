@@ -1,0 +1,47 @@
+{
+  "version": 3,
+  "study": "E01/S01_spatial_repair",
+  "model_profile": "main",
+  "clips_manifest": "experiments/E01_evidence_mechanism/manifests/development_clips_v1.json",
+  "tasks": ["stereo"],
+  "frames": "center",
+  "context_hw": null,
+  "seed": 20260916,
+  "pipeline": {
+    "mode": "M0",
+    "memory_capacity": 8,
+    "memory_bytes": 33554432,
+    "memory_reads": 2,
+    "retrieval_policy": "diversity",
+    "local_operators": ["median3", "gaussian1"]
+  },
+  "matching": {
+    "max_queries": 1024,
+    "max_candidates": 24,
+    "feature_dim": 64,
+    "query_fraction": 0.1,
+    "feature_weight": 0.5,
+    "movement_penalty": 0.001,
+    "min_improvement": 0.015,
+    "max_update_px": 32.0,
+    "require_baseline_support": true
+  },
+  "profiles": [{"name": "clean"}],
+  "arms": ["solved"],
+  "reference_bank": ["identity", "median3", "gaussian1"],
+  "spatial_gate": {
+    "query_budget": 1024,
+    "sample_seed": 20260916,
+    "support_error_threshold_px": 1.0,
+    "wrong_support_shift_px": 128,
+    "privileged_location_definition": "min_A_ref_error_le_1px_outside_query"
+  },
+  "scenes": ["0009"],
+  "diagnostic_contract": {
+    "save_candidate_feature_channels": true,
+    "save_used_support_donor_decisions": true,
+    "no_parameter_fitting": true
+  },
+  "scientific_scope": "engineering smoke only; no mechanism conclusion",
+  "cuda_memory_fraction": 0.6
+}

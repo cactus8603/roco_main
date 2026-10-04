@@ -1,0 +1,462 @@
+{
+  "contract_id": "CSB-ARCH-v1-20260916",
+  "status": "design_registry_not_run_manifest",
+  "datasets": {
+    "spring": {
+      "rgb_root": "/ssd7/cactus8603/ro_co/track2/canonical/spring",
+      "flow_root": "/ssd7/cactus8603/ro_co/track2/canonical/spring",
+      "disp_root": "/ssd4/cactus8603/rocospring/datasets/spring/extracted/spring",
+      "provider_key": [
+        "dataset_version",
+        "split",
+        "scene",
+        "frame",
+        "view",
+        "modality"
+      ],
+      "train_scene_count": 37,
+      "test_scene_count": 10,
+      "rgb_per_eye_train": 5000,
+      "disp1_per_eye_train": 5000,
+      "flow_per_direction_per_eye_train": 4963,
+      "test_gt_available": false,
+      "disp2_available": false,
+      "rgb_sample_cross_root_match_count": 6,
+      "whole_dataset_content_verified": false,
+      "time_basis": "frame_index",
+      "physical_fps": null,
+      "train_camera_pose_metadata_found": false,
+      "inventory": "experiments/E01_evidence_mechanism/manifests/local_data_inventory_20260916.json"
+    },
+    "robustspring": {
+      "role": "future_official_benchmark",
+      "stereo_root": "/ssd4/cactus8603/rocospring/datasets/robustspring/extracted/robust_spring",
+      "flow_root": "/ssd7/cactus8603/ro_co/track2/canonical/robust_spring",
+      "local_scope": "test_only_directories",
+      "condition_directories": 20,
+      "local_gt_available": false,
+      "content_version_completeness_verified": false
+    }
+  },
+  "models": {
+    "main": {
+      "stereo": {
+        "filename": "crocostereo.pth",
+        "role": "E01_scientific_main",
+        "status": "downloaded_hash_registered",
+        "download_url": "https://download.europe.naverlabs.com/ComputerVision/CroCo/StereoFlow_models/crocostereo.pth",
+        "local_path": "/ssd1/cactus8603/roco_main/artifacts/models/croco_v2/main/crocostereo.pth",
+        "sha256": "8b48935772c98714db1a18773d687da273d3ab721410cc5e398451a0dac8982f",
+        "metadata": {
+          "schema_version": 1,
+          "task": "stereo",
+          "role": "E01_scientific_main",
+          "path": "/ssd1/cactus8603/roco_main/artifacts/models/croco_v2/main/crocostereo.pth",
+          "source_url": "https://download.europe.naverlabs.com/ComputerVision/CroCo/StereoFlow_models/crocostereo.pth",
+          "sha256": "8b48935772c98714db1a18773d687da273d3ab721410cc5e398451a0dac8982f",
+          "size_bytes": 1749871601,
+          "recorded_utc": "2026-09-16T08:07:31.264358+00:00",
+          "checksum_basis": "first_https_download_recorded_locally",
+          "publisher_checksum_independently_verified": false,
+          "crop": [
+            352,
+            704
+          ],
+          "criterion": "LaplacianLossBounded2(a=3, b=3)",
+          "croco_args": {
+            "enc_embed_dim": 1024,
+            "enc_depth": 24,
+            "enc_num_heads": 16,
+            "dec_embed_dim": 768,
+            "dec_num_heads": 12,
+            "dec_depth": 12,
+            "img_size": [
+              352,
+              704
+            ],
+            "pos_embed": "RoPE100"
+          },
+          "checkpoint_args": {
+            "task": "stereo",
+            "criterion": "LaplacianLossBounded2(a=3, b=3)",
+            "crop": [
+              352,
+              704
+            ],
+            "croco_args": {
+              "enc_embed_dim": 1024,
+              "enc_depth": 24,
+              "enc_num_heads": 16,
+              "dec_embed_dim": 768,
+              "dec_num_heads": 12,
+              "dec_depth": 12,
+              "img_size": [
+                352,
+                704
+              ],
+              "pos_embed": "RoPE100"
+            },
+            "tile_conf_mode": "conf_expsigmoid_15_3"
+          },
+          "spring_supervised_finetuning": false,
+          "exposure_basis": "official_main_training_command_does_not_list_Spring",
+          "exposure_source": "https://github.com/naver/croco/blob/master/stereoflow/README.MD",
+          "upstream_pretraining_overlap": "not_fully_audited",
+          "transport": {
+            "source_url": "https://download.europe.naverlabs.com/ComputerVision/CroCo/StereoFlow_models/crocostereo.pth",
+            "total_bytes": 1749871601,
+            "etag": "\"684cebf1-6052b05ac39bb\"",
+            "last_modified": "Tue, 12 Sep 2023 15:23:17 GMT"
+          }
+        },
+        "spring_supervised_finetuning": false,
+        "exposure_basis": "official_main_training_command_does_not_list_Spring",
+        "upstream_pretraining_overlap": "not_fully_audited",
+        "frozen": true,
+        "silent_fallback_to_legacy": false
+      },
+      "flow": {
+        "filename": "crocoflow.pth",
+        "role": "E01_scientific_main",
+        "status": "downloaded_hash_registered",
+        "download_url": "https://download.europe.naverlabs.com/ComputerVision/CroCo/StereoFlow_models/crocoflow.pth",
+        "local_path": "/ssd1/cactus8603/roco_main/artifacts/models/croco_v2/main/crocoflow.pth",
+        "sha256": "11211e7396910a9ab335b415c2629547c0d3e9f4b68738788da27093feb2d856",
+        "metadata": {
+          "schema_version": 1,
+          "task": "flow",
+          "role": "E01_scientific_main",
+          "path": "/ssd1/cactus8603/roco_main/artifacts/models/croco_v2/main/crocoflow.pth",
+          "source_url": "https://download.europe.naverlabs.com/ComputerVision/CroCo/StereoFlow_models/crocoflow.pth",
+          "sha256": "11211e7396910a9ab335b415c2629547c0d3e9f4b68738788da27093feb2d856",
+          "size_bytes": 1749871729,
+          "recorded_utc": "2026-09-16T08:07:44.060021+00:00",
+          "checksum_basis": "first_https_download_recorded_locally",
+          "publisher_checksum_independently_verified": false,
+          "crop": [
+            320,
+            384
+          ],
+          "criterion": "LaplacianLossBounded(max_gtnorm=10000,a=0.25,b=4.)",
+          "croco_args": {
+            "enc_embed_dim": 1024,
+            "enc_depth": 24,
+            "enc_num_heads": 16,
+            "dec_embed_dim": 768,
+            "dec_num_heads": 12,
+            "dec_depth": 12,
+            "img_size": [
+              320,
+              384
+            ],
+            "pos_embed": "RoPE100"
+          },
+          "checkpoint_args": {
+            "task": "flow",
+            "criterion": "LaplacianLossBounded(max_gtnorm=10000,a=0.25,b=4.)",
+            "crop": [
+              320,
+              384
+            ],
+            "croco_args": {
+              "enc_embed_dim": 1024,
+              "enc_depth": 24,
+              "enc_num_heads": 16,
+              "dec_embed_dim": 768,
+              "dec_num_heads": 12,
+              "dec_depth": 12,
+              "img_size": [
+                320,
+                384
+              ],
+              "pos_embed": "RoPE100"
+            },
+            "tile_conf_mode": "conf_expsigmoid_10_5"
+          },
+          "spring_supervised_finetuning": false,
+          "exposure_basis": "official_main_training_command_does_not_list_Spring",
+          "exposure_source": "https://github.com/naver/croco/blob/master/stereoflow/README.MD",
+          "upstream_pretraining_overlap": "not_fully_audited",
+          "transport": {
+            "source_url": "https://download.europe.naverlabs.com/ComputerVision/CroCo/StereoFlow_models/crocoflow.pth",
+            "total_bytes": 1749871729,
+            "etag": "\"684cec71-6052b1017dbff\"",
+            "last_modified": "Tue, 12 Sep 2023 15:26:11 GMT"
+          }
+        },
+        "spring_supervised_finetuning": false,
+        "exposure_basis": "official_main_training_command_does_not_list_Spring",
+        "upstream_pretraining_overlap": "not_fully_audited",
+        "frozen": true,
+        "silent_fallback_to_legacy": false
+      }
+    },
+    "legacy_spring": {
+      "stereo": {
+        "task": "stereo",
+        "path": "/ssd7/cactus8603/roco_spring/stereo/checkpoints/croco/crocostereo_finetune_spring.pth",
+        "sha256": "123273a722a58134c6816efe5122c427815c92f82896be4d484e6d21b52da575",
+        "crop": [
+          352,
+          704
+        ],
+        "criterion": "LaplacianLossBounded2(a=3.,b=3.)",
+        "croco_args": {
+          "enc_embed_dim": 1024,
+          "enc_depth": 24,
+          "enc_num_heads": 16,
+          "dec_embed_dim": 768,
+          "dec_num_heads": 12,
+          "dec_depth": 12,
+          "img_size": [
+            352,
+            704
+          ],
+          "pos_embed": "RoPE100"
+        },
+        "parameters": 437417890,
+        "role": "legacy_parity_or_explicit_comparator",
+        "exists_checked_20260916": true,
+        "size_bytes": 1749871601,
+        "hash_status": "recorded_by_previous_verified_run_not_recomputed_this_inventory",
+        "spring_supervised_finetuned": true
+      },
+      "flow": {
+        "task": "flow",
+        "path": "/ssd1/cactus8603/roco_main/research/croco_trusted_first/assets/crocoflow_finetune_spring.pth",
+        "sha256": "1fdab7edbae9e13a171a85972376d08e6d0650003197f8eaaeabd92a7d415eb6",
+        "crop": [
+          320,
+          384
+        ],
+        "criterion": "LaplacianLossBounded(max_gtnorm=10000,a=0.25,b=4.)",
+        "croco_args": {
+          "enc_embed_dim": 1024,
+          "enc_depth": 24,
+          "enc_num_heads": 16,
+          "dec_embed_dim": 768,
+          "dec_num_heads": 12,
+          "dec_depth": 12,
+          "img_size": [
+            320,
+            384
+          ],
+          "pos_embed": "RoPE100"
+        },
+        "parameters": 437417923,
+        "role": "legacy_parity_or_explicit_comparator",
+        "exists_checked_20260916": true,
+        "size_bytes": 1749871729,
+        "hash_status": "recorded_by_previous_verified_run_not_recomputed_this_inventory",
+        "spring_supervised_finetuned": true
+      }
+    }
+  },
+  "upstream_code": {
+    "croco_source": "/ssd7/cactus8603/roco_spring/stereo-track-20260827/vendor/croco",
+    "revision": "5d4dbc920b4cc0dac66bef0ce6876b58f1c82deb",
+    "files": [
+      {
+        "path": "vendor/croco/LICENSE",
+        "sha256": "2c701261a5f4a07764b29aa85caf2a6187408a53b59f2c2a10940d74c9f6c8f1"
+      },
+      {
+        "path": "vendor/croco/NOTICE",
+        "sha256": "f63d27ce6c6134e816655693dbcb81fdbd279158ef681797fb6e1e217d353821"
+      },
+      {
+        "path": "vendor/croco/NOTICE_CHECKPOINTS",
+        "sha256": "1128ad8f2011497b91d0860499e50ebb26b1448151342601a735a7c06b9e3d31"
+      },
+      {
+        "path": "vendor/croco/README.MD",
+        "sha256": "5f3cf4b9c2f8fc8f52613d36d8f96e751e8b486c1fa1975b1d9ae5aa0273240f"
+      },
+      {
+        "path": "vendor/croco/REVISION",
+        "sha256": "18a8f553b3dbf4f475774af0a71c3faa35f0638585231c72ebb2ac2220f3da04"
+      },
+      {
+        "path": "vendor/croco/croco-stereo-flow-demo.ipynb",
+        "sha256": "536a3b7e5b62f0e98d9490a31455f3460f7a335e7bbe4f43c4982689f87f5778"
+      },
+      {
+        "path": "vendor/croco/datasets/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "vendor/croco/datasets/crops/README.MD",
+        "sha256": "206bf3695653bb043d110a5ecd3196435c535d5ba1ba666ba91c302eb308bd5f"
+      },
+      {
+        "path": "vendor/croco/datasets/crops/extract_crops_from_images.py",
+        "sha256": "142e068f86830358a2f3f57f66ce66cfe5ebd86876e1c84a63c142ceba3957aa"
+      },
+      {
+        "path": "vendor/croco/datasets/habitat_sim/README.MD",
+        "sha256": "8b60b48dd9dfdab117a51e3794e4ecb391ec43cb90e28b27db85dbfb23cd954e"
+      },
+      {
+        "path": "vendor/croco/datasets/habitat_sim/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "vendor/croco/datasets/habitat_sim/generate_from_metadata.py",
+        "sha256": "96d5606cd7ec72f88fe1fe926006f572698c5bc5af14a0e4d00caf63aef749a5"
+      },
+      {
+        "path": "vendor/croco/datasets/habitat_sim/generate_from_metadata_files.py",
+        "sha256": "3fc41e4e0dd9a864cc4504287296ab88dd3d7e043ad5e5d4640d3cd4a7f69cf8"
+      },
+      {
+        "path": "vendor/croco/datasets/habitat_sim/generate_multiview_images.py",
+        "sha256": "41d6d1215b5e76c89ada79e5dd061841f86d789bb8d0dd6305891bd435bdcea8"
+      },
+      {
+        "path": "vendor/croco/datasets/habitat_sim/multiview_habitat_sim_generator.py",
+        "sha256": "e5ef3b699ed00d6279b3b991c12288ccd726dbd72860383c120955de1f5105e6"
+      },
+      {
+        "path": "vendor/croco/datasets/habitat_sim/pack_metadata_files.py",
+        "sha256": "b3dbfe870c5c249a5b2e2662ea5fe3cd5c3d2d80dd1e837338dee28d011b0134"
+      },
+      {
+        "path": "vendor/croco/datasets/habitat_sim/paths.py",
+        "sha256": "ab08b1fea900ff5d72be0767928e1dbe707b644ae2212fde38c75f39dd0a8e3d"
+      },
+      {
+        "path": "vendor/croco/datasets/pairs_dataset.py",
+        "sha256": "c640a0f445036d864e79087482a12601d6a46e4bb5cdf17291af2e0106dcb934"
+      },
+      {
+        "path": "vendor/croco/datasets/transforms.py",
+        "sha256": "3e9c66e98dca93c97a6109be73a13c655136ea0b9b57f162e3cf4f2b77ad9f64"
+      },
+      {
+        "path": "vendor/croco/demo.py",
+        "sha256": "dd5c01822388d235840228c99362f62aeadd6dc6220a235a298096245aae5eff"
+      },
+      {
+        "path": "vendor/croco/interactive_demo.ipynb",
+        "sha256": "07299650d8f86498f7aeef2baedef89410c5a7e6fca5275db78266fff2e6bf2a"
+      },
+      {
+        "path": "vendor/croco/models/blocks.py",
+        "sha256": "2f9e804778edaf0c86de476d52de146f246f0d324e5409439d1f8f885d248fb4"
+      },
+      {
+        "path": "vendor/croco/models/criterion.py",
+        "sha256": "2a5891d3ab1246b014140de49123a4ec53a481afc28033a14d87be31f130c571"
+      },
+      {
+        "path": "vendor/croco/models/croco.py",
+        "sha256": "6725654a2c7c4d8dbf9f19f400b1e7adf9e67dfc563713bf7290d9483f727d3a"
+      },
+      {
+        "path": "vendor/croco/models/croco_downstream.py",
+        "sha256": "669d9346e6b93d86c403022f304d73dd7b2f0b676bd790152fbe3986668eb911"
+      },
+      {
+        "path": "vendor/croco/models/curope/__init__.py",
+        "sha256": "d30b867f4f8b45f019c2b9a24ef38146867e09fc0d86c55232cc56e5b1d4938e"
+      },
+      {
+        "path": "vendor/croco/models/curope/curope.cpp",
+        "sha256": "d715f5275600bc4f3f3fdc9aabec529a5954a9e6d161446346f580c68561927a"
+      },
+      {
+        "path": "vendor/croco/models/curope/curope2d.py",
+        "sha256": "c97984ef5298265d085b53c182a92fe8a81e6050a191a9ba9e8a8304641082de"
+      },
+      {
+        "path": "vendor/croco/models/curope/kernels.cu",
+        "sha256": "ea288c16cc961388efab2076ba183ce3b50eccbf899d82c1509ae9e836f4fa8e"
+      },
+      {
+        "path": "vendor/croco/models/curope/setup.py",
+        "sha256": "8cdb30aa96562ea7a0048e551f55331a3e0bb854d4b4987ab7474940dccd021e"
+      },
+      {
+        "path": "vendor/croco/models/dpt_block.py",
+        "sha256": "3bf381f9c20460bbdf00c98962e83a1b512e235eff5a81f572d28f446165cbc5"
+      },
+      {
+        "path": "vendor/croco/models/head_downstream.py",
+        "sha256": "d6594fa99aa7a094d26db5e95396b5c6f2cbc55d8ecc70f463b4075011d2c4a0"
+      },
+      {
+        "path": "vendor/croco/models/masking.py",
+        "sha256": "d1c13bc306b2bae4be22fcb7123f8ec5821ad7c9d409d93a83ff3cb07fee1768"
+      },
+      {
+        "path": "vendor/croco/models/pos_embed.py",
+        "sha256": "24d5dbefe59984776d36abaadf9effd32aa683920868870f6ad606975e3e837e"
+      },
+      {
+        "path": "vendor/croco/pretrain.py",
+        "sha256": "51be99b5f10d651458dcb1e68961fd7cddc117f92f4d0dc3745e7da4e3c94b96"
+      },
+      {
+        "path": "vendor/croco/stereoflow/README.MD",
+        "sha256": "cf12605ce55f6c3d9721b701c711c24ba173c67dad277be7b9197386b9766e78"
+      },
+      {
+        "path": "vendor/croco/stereoflow/augmentor.py",
+        "sha256": "60456ceb85710bdfb34926be466aba38b71de76545632c89d2bf425268cc530a"
+      },
+      {
+        "path": "vendor/croco/stereoflow/criterion.py",
+        "sha256": "b8bad8a8dc0d7c9b01ebee51e5767b60401b0cbe44e5886ac66ba4067eb6a891"
+      },
+      {
+        "path": "vendor/croco/stereoflow/datasets_flow.py",
+        "sha256": "b044cd934830768f275f37e16bf0e5a52ed43b060bef8d5e838ce81435d49a11"
+      },
+      {
+        "path": "vendor/croco/stereoflow/datasets_stereo.py",
+        "sha256": "a1aeb93a2b1818edc913d67ce1252c347f7b44c3ee39c29402ebe8832a7e8088"
+      },
+      {
+        "path": "vendor/croco/stereoflow/download_model.sh",
+        "sha256": "570b40f6adfbc1bf091ac9f4b892850594154921dfe55d60a4da966bafb49f00"
+      },
+      {
+        "path": "vendor/croco/stereoflow/engine.py",
+        "sha256": "eee47ffe9b4948ab24ead93b13d98a35379a08284f65f6855b9864a75c36ff57"
+      },
+      {
+        "path": "vendor/croco/stereoflow/test.py",
+        "sha256": "a8e6c2daca20c5e51f243ed0dfe91a93d7533ec3905fb224a297d17d2d865f4b"
+      },
+      {
+        "path": "vendor/croco/stereoflow/train.py",
+        "sha256": "528cd764cf5a0ffb0a0352de955d89321f2ecce89eb1b82f359363636c3d2e53"
+      },
+      {
+        "path": "vendor/croco/utils/misc.py",
+        "sha256": "250f96d0df00a5834507f41d2bbe5ddf736233c62b5c0e3c7f0020486722e148"
+      }
+    ],
+    "proxy_source": "/ssd7/cactus8603/roco_spring/stereo-track-20260827/tracks/stereo/robust_proxy/corruptions.py",
+    "proxy_sha256": "4f237537510041ee10eeb4a06bb4a58f214955f2070aa986f44a4d9f023688f4"
+  },
+  "known_data_version_caveat": {
+    "source_from_parent": "https://spring-benchmark.org/",
+    "announcement_date": "2023-07-17",
+    "affected_scenes": [
+      "0002",
+      "0020"
+    ],
+    "affected_types": [
+      "flow_FW_right",
+      "disp2_FW_right",
+      "maps"
+    ],
+    "local_version_verified": false,
+    "note": "Header/filesystem inventory cannot certify corrected right GT version; E01 left-flow/stereo core unaffected by this listed right-GT correction."
+  },
+  "official_sources": [
+    "https://spring-benchmark.org/",
+    "https://github.com/naver/croco/blob/master/stereoflow/README.MD"
+  ]
+}

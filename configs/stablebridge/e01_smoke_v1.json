@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "study": "E01/S01_spatial_repair",
+  "model_profile": "main",
+  "clips_manifest": "experiments/E01_evidence_mechanism/manifests/development_clips_v1.json",
+  "tasks": [
+    "stereo",
+    "flow"
+  ],
+  "frames": "center",
+  "context_hw": null,
+  "context_policy": "each official task native crop; no resize",
+  "seed": 20260916,
+  "pipeline": {
+    "mode": "M0",
+    "memory_capacity": 8,
+    "memory_bytes": 33554432,
+    "memory_reads": 2,
+    "retrieval_policy": "diversity",
+    "local_operators": [
+      "median3",
+      "gaussian1"
+    ]
+  },
+  "matching": {
+    "max_queries": 1024,
+    "max_candidates": 24,
+    "feature_dim": 64,
+    "query_fraction": 0.1,
+    "max_update_px": 32.0,
+    "require_baseline_support": true
+  },
+  "profiles": [
+    {
+      "name": "clean"
+    },
+    {
+      "name": "gaussian_noise",
+      "options": {
+        "sigma": 0.06
+      }
+    }
+  ],
+  "arms": [
+    "generic",
+    "raw",
+    "solved",
+    "wrong_support"
+  ],
+  "reference_bank": [
+    "identity",
+    "median3",
+    "gaussian1"
+  ],
+  "confirmation_gates": {
+    "scientific_success_claim": false,
+    "reason": "preliminary mechanism study; report paired per-scene effects and harms, no ICCV-level claim from this panel"
+  },
+  "cuda_memory_fraction": 0.6,
+  "scenes": [
+    "0001"
+  ]
+}

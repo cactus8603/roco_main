@@ -98,6 +98,74 @@ PYTHONPATH=src python scripts/prepare_u0_native_data.py \
 必須以 plan／split／probe hashes 產生 native flow、risk 與 probe receipts，才能建立正式的
 `U0NativeManifestV1`；這份 input plan 本身不具訓練、校準或部署 authority。
 
+## U²Flow-style Sintel 開發資料
+
+第一個 uncertainty 訓練／開發 domain 選用 **MPI-Sintel**，而不是先用 KITTI。現有機器已有
+完整 Sintel training `clean/final`，且其非剛體場景較接近後續 Spring 評估；KITTI 的完整
+U²Flow pipeline 另需 Raw、2012/2015 multi-view 與 SAM masks。
+
+資料契約位於 `u2flow_training_data.py`，augmentation 位於
+`u2flow_augmentations.py`：
+
+- 基本取樣單位固定為同 scene 的相鄰二幀 `(t, t+1)`；Clean／Final 共 2,082 筆
+  render-specific rows，依 scene 分成 fit／validation／calibration／evaluation。
+- 三幀只保留給未來 bidirectional fusion，`fusion_context_enabled=false`，不改變目前二幀
+  observer 的訓練語意；啟用時採 `[previous,current,next]`，scene 起點重複第一幀。
+- `sample_u2flow_role_recipe_v1` 強制 fit 使用由 `(master seed, epoch, row id)` 派生的 random
+  native crop；held-out roles 忽略 epoch，固定使用 identity appearance＋center crop。U²Flow 公開
+  程式是 384×832 random crop、論文文字是 448×1024；目前 CroCo flow checkpoint 固定為
+  320×384，因此採 320×384 且把差異寫入 hash-bound recipe，沒有假裝完全重現原論文。
+- fit augmentation 包含共同 crop、horizontal／vertical flip、endpoint swap、可逆 affine、
+  brightness／contrast／saturation、Gaussian blur 與 returned-last-frame erasing。所有 seed、
+  affine inverse、valid support、profile 與 recipe 都可重播並雜湊。
+- inventory 只讀 RGB，不搜尋或解碼 flow GT。未來 action-bank outcomes 以每列保留的獨立
+  namespace 另外 join，不會成為 U0 runtime feature。
+
+建立實際 manifest：
+
+```bash
+PYTHONPATH=src python scripts/prepare_u0_sintel_u2flow_data.py \
+  --config configs/stablebridge/u0_sintel_u2flow_data_v1.json \
+  --output experiments/U0_sintel_u2flow_data_v1/INPUT_MANIFEST.json
+```
+
+這是 U0 observer 的 development manifest 與 RGB view primitive，不是可直接開訓的 U²Flow
+官方 reproduction：本機尚未加入 Sintel Raw、SAM masks 或官方 U²Flow checkpoint；teacher
+flow／occlusion／uncertainty target 的同步幾何轉換及 training Dataset 尚未接上。公開程式中的
+per-frame relative affine 也尚未逐式移植；目前 profile 明確標記為 shared-pair affine，之後
+可在不改資料 split 的情況下升級。
+
+## KITTI 2012／2015 本機資料
+
+U²Flow stage-2 與之後 action-bank 驗證會用到的 KITTI 公開資料放在：
+
+```text
+/ssd6/cactus8603/kitti_u2flow_20261005/
+├── downloads/                         # 四個原始 ZIP，保留供重驗
+└── extracted/
+    ├── kitti2012/{benchmark,multiview}/
+    └── kitti2015/{benchmark,multiview}/
+```
+
+四包資料分別是 2012／2015 benchmark 與各自的 20-frame multiview extension；檔案來源、
+byte size、SHA-256、必要目錄及解壓 inventory 固定在
+`configs/stablebridge/kitti_u2flow_data_v1.json`。完整重驗命令為：
+
+```bash
+python scripts/verify_kitti_u2flow_data.py --verify-zip
+```
+
+四包 archive 合計 34,890,446,056 bytes，archive＋解壓資料目前約佔 66 GiB。官方 multiview
+並非每個 scene 都有完整 21 幀；依實際檔名、相鄰幀與排除 09–12 的 U²Flow 規則，若照參考
+實作同時使用 train＋test 左右 camera，實際共有 23,604 pairs，而不是公式粗估的 23,670。
+
+這批資料不改變「先以 Sintel 開發 uncertainty observer」的決定；KITTI 會先作 domain-shift
+檢查、calibration 與未來 action-bank outcome。benchmark 的 testing split 不得用於本專案
+的訓練或調參；官方 U²Flow 雖把 multiview testing 影像納入 stage-2，若要重現該 transductive
+protocol 必須另開明示設定。所有 KITTI 下載皆受官方註冊、用途與資料政策約束，不只 Raw。
+完整 stage-1 所需的 Raw drives 本次未納入；SAM key-object／full-seg masks 必須由影像產生，
+不是這四包官方資料的一部分，也明確標為尚未具備。
+
 ## 目前啟用邊界
 
 ```text

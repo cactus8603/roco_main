@@ -1,0 +1,144 @@
+{
+  "schema": "stablebridge-kitti-u2flow-data/v1",
+  "storage_root": "/ssd6/cactus8603/kitti_u2flow_20261005",
+  "policy": {
+    "official_registration_and_purpose_declaration_required": true,
+    "benchmark_testing_split_must_not_be_used_for_tuning": true,
+    "stablebridge_use_multiview_testing_for_training": false,
+    "u2flow_reference_protocol_uses_multiview_testing_for_training": true
+  },
+  "training_scope": {
+    "primary_development_domain": "sintel",
+    "kitti_roles": ["domain_shift", "calibration", "action_bank_outcomes"],
+    "u2flow_stage2_archive_pair_count_if_train_and_test_are_used": 23604,
+    "u2flow_stage2_excluded_frame_indices": [9, 10, 11, 12],
+    "base_training_frames": [10, 11],
+    "optional_fusion_frames": [9, 10, 11]
+  },
+  "missing_generated_or_restricted_dependencies": {
+    "kitti_raw_stage1": {
+      "included": false,
+      "reason": "separate authenticated KITTI Raw dependency; not needed for current Sintel-first development"
+    },
+    "sam_key_object_masks": {
+      "included": false,
+      "reason": "must be generated from multiview RGB with the SAM/UnSAMFlow pipeline"
+    },
+    "sam_full_segmentation_masks": {
+      "included": false,
+      "reason": "must be generated from multiview RGB with the SAM/UnSAMFlow pipeline"
+    }
+  },
+  "sources": [
+    {
+      "source_id": "kitti2012_benchmark",
+      "official_dataset_page": "https://www.cvlibs.net/datasets/kitti/eval_stereo_flow.php?benchmark=stereo&error=3&eval=all&table=refl",
+      "url": "https://s3.eu-central-1.amazonaws.com/avg-kitti/data_stereo_flow.zip",
+      "archive_relative_path": "downloads/data_stereo_flow.zip",
+      "size_bytes": 2008641404,
+      "sha256": "3414457882744991709c0ee97360f04bf437f1814196dfc77d7783605113eb13",
+      "extracted_relative_path": "extracted/kitti2012/benchmark",
+      "required_relative_paths": [
+        "training/colored_0",
+        "training/colored_1",
+        "training/flow_occ",
+        "training/flow_noc",
+        "testing/colored_0",
+        "testing/colored_1"
+      ],
+      "expected_png_counts": {
+        "training/colored_0": 388,
+        "training/colored_1": 388,
+        "training/flow_occ": 194,
+        "training/flow_noc": 194,
+        "testing/colored_0": 390,
+        "testing/colored_1": 390
+      }
+    },
+    {
+      "source_id": "kitti2012_multiview",
+      "official_dataset_page": "https://www.cvlibs.net/datasets/kitti/eval_stereo_flow.php?benchmark=stereo&error=3&eval=all&table=refl",
+      "url": "https://s3.eu-central-1.amazonaws.com/avg-kitti/data_stereo_flow_multiview.zip",
+      "archive_relative_path": "downloads/data_stereo_flow_multiview.zip",
+      "size_bytes": 17766997445,
+      "sha256": "e1b4a574119464f48fce49b6fbb90fd308d8d2729cb5f79b2c6d42649010dca9",
+      "extracted_relative_path": "extracted/kitti2012/multiview",
+      "required_relative_paths": [
+        "training/image_2",
+        "training/image_3",
+        "testing/image_2",
+        "testing/image_3"
+      ],
+      "expected_png_counts": {
+        "training/image_2": 4062,
+        "training/image_3": 4062,
+        "testing/image_2": 4085,
+        "testing/image_3": 4085
+      },
+      "u2flow_pair_contract": {
+        "excluded_frame_indices": [9, 10, 11, 12],
+        "expected_pairs": {
+          "training/image_2": 2898,
+          "training/image_3": 2898,
+          "testing/image_2": 2915,
+          "testing/image_3": 2915
+        }
+      }
+    },
+    {
+      "source_id": "kitti2015_benchmark",
+      "official_dataset_page": "https://www.cvlibs.net/datasets/kitti/eval_scene_flow.php?benchmark=scene_flow&eval_area=all&eval_gt=noc",
+      "url": "https://s3.eu-central-1.amazonaws.com/avg-kitti/data_scene_flow.zip",
+      "archive_relative_path": "downloads/data_scene_flow.zip",
+      "size_bytes": 1681488619,
+      "sha256": "2908dfc54e6ed5a595fa82f03d7b66d6e4ab893b8537d24151802857dda65943",
+      "extracted_relative_path": "extracted/kitti2015/benchmark",
+      "required_relative_paths": [
+        "training/image_2",
+        "training/image_3",
+        "training/flow_occ",
+        "training/flow_noc",
+        "testing/image_2",
+        "testing/image_3"
+      ],
+      "expected_png_counts": {
+        "training/image_2": 400,
+        "training/image_3": 400,
+        "training/flow_occ": 200,
+        "training/flow_noc": 200,
+        "testing/image_2": 400,
+        "testing/image_3": 400
+      }
+    },
+    {
+      "source_id": "kitti2015_multiview",
+      "official_dataset_page": "https://www.cvlibs.net/datasets/kitti/eval_scene_flow.php?benchmark=scene_flow&eval_area=all&eval_gt=noc",
+      "url": "https://s3.eu-central-1.amazonaws.com/avg-kitti/data_scene_flow_multiview.zip",
+      "archive_relative_path": "downloads/data_scene_flow_multiview.zip",
+      "size_bytes": 13433318588,
+      "sha256": "06c705f94d4b3cb5d5de291eb52c3c81e673d4ef67839e8d77218b2389cebd5c",
+      "extracted_relative_path": "extracted/kitti2015/multiview",
+      "required_relative_paths": [
+        "training/image_2",
+        "training/image_3",
+        "testing/image_2",
+        "testing/image_3"
+      ],
+      "expected_png_counts": {
+        "training/image_2": 4200,
+        "training/image_3": 4200,
+        "testing/image_2": 4189,
+        "testing/image_3": 4189
+      },
+      "u2flow_pair_contract": {
+        "excluded_frame_indices": [9, 10, 11, 12],
+        "expected_pairs": {
+          "training/image_2": 3000,
+          "training/image_3": 3000,
+          "testing/image_2": 2989,
+          "testing/image_3": 2989
+        }
+      }
+    }
+  ]
+}

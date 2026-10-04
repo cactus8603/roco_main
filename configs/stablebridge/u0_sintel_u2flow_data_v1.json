@@ -1,0 +1,61 @@
+{
+  "manifest_id": "u0-sintel-clean-final-u2flow-style-v1",
+  "stage": "finetune",
+  "root": "/ssd7/cactus8603/roco_sintel_external_20260929/extracted",
+  "base_frame_count": 2,
+  "fusion_context_frames": 3,
+  "fusion_context_enabled": false,
+  "splits": {
+    "fit": [
+      "alley_1", "ambush_4", "ambush_6", "ambush_7", "bamboo_2",
+      "bandage_2", "cave_2", "market_2", "market_5", "shaman_2",
+      "sleeping_2", "temple_3"
+    ],
+    "validation": ["alley_2", "ambush_2", "bamboo_1"],
+    "calibration": ["ambush_5", "bandage_1", "cave_4"],
+    "evaluation": ["market_6", "mountain_1", "shaman_3", "sleeping_1", "temple_2"]
+  },
+  "crop_recipe": {
+    "fit": "random_native_crop",
+    "held_out": "deterministic_center_native_crop",
+    "height": 320,
+    "width": 384,
+    "resize": false,
+    "reason": "CroCo flow checkpoint has a fixed 320x384 input lattice",
+    "u2flow_public_code_reference": [384, 832],
+    "u2flow_paper_reported_reference": [448, 1024]
+  },
+  "augmentation_recipe": {
+    "implementation": "stablebridge.physical_repair.u2flow_augmentations.U2FlowAugmentationProfileV1",
+    "fit_only": true,
+    "role_recipe_builder": "stablebridge.physical_repair.u2flow_augmentations.sample_u2flow_role_recipe_v1",
+    "seed_schedule": "sha256(master_seed,epoch,row_id)_uint64_v1",
+    "master_seed": 8603,
+    "held_out_views": "epoch_invariant_identity_plus_deterministic_center_crop",
+    "teacher_flow_paths_detached": true,
+    "spatial_relation": "shared_pair_affine_v1_not_exact_u2flow_relative_affine",
+    "profile_hash": "21fa87de445c86937026ded52aa176eb590485407c784116297efd62f5ff11af",
+    "profile": {
+      "profile_id": "u2flow-sintel-croco-320x384-v1",
+      "crop_hw": [320, 384],
+      "crop_provenance": "adapted_from_u2flow_official_code_for_fixed_croco_lattice",
+      "paper_reported_crop_hw": [448, 1024],
+      "horizontal_flip_probability": 0.5,
+      "vertical_flip_probability": 0.1,
+      "swap_probability": 0.5,
+      "affine_probability": 1.0,
+      "rotation_degrees_range": [-11.4591559026, 11.4591559026],
+      "scale_range": [1.0, 1.5],
+      "translate_x_fraction_range": [-0.05, 0.05],
+      "translate_y_fraction_range": [-0.05, 0.05],
+      "brightness_range": [0.5, 1.5],
+      "contrast_range": [0.5, 1.5],
+      "saturation_range": [0.5, 1.5],
+      "gaussian_blur_probability": 0.5,
+      "gaussian_blur_sigma_range": [0.1, 3.0],
+      "last_frame_erasing_probability": 0.5,
+      "erase_area_fraction_range": [0.02, 0.082],
+      "erase_aspect_ratio_range": [0.5, 2.0]
+    }
+  }
+}

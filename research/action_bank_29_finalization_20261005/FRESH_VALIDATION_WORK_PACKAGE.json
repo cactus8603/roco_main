@@ -229,6 +229,14 @@
       "path": "experiments/E285_tartanair_r4_preoutcome_inference_v1/REPRODUCIBILITY_AUDIT.json",
       "sha256": "9992bdb023bc8e23cf921efd6483f1987f4738780a10e4c8aa75c921bf8e528e"
     },
+    "external_panel_r4_reject_only_scoring_protocol": {
+      "path": "experiments/E286_tartanair_r4_reject_only_scoring_v1/PROTOCOL.json",
+      "sha256": "046deed0facefba4f29e84bae276ff97b1221d8e84986b2fb732cb775277d3e6"
+    },
+    "external_panel_r4_scoring_tests": {
+      "path": "experiments/E286_tartanair_r4_reject_only_scoring_v1/TEST_RESULTS.json",
+      "sha256": "01a4e992bbae88657bad0845e36b6810ca4bc186b307ce1a3a5c498cd152dc2f"
+    },
     "gpu_action_preflight": {
       "path": "experiments/E283_action_bank_gpu_preflight_v1/PREFLIGHT.json",
       "sha256": "9edc0c45af7ca449a97e29bc9cd2406f1407d16db35113a98ad00238384ab38c"
@@ -252,6 +260,8 @@
     "fresh_before_only_feature_records_available": true,
     "fresh_native_r4_prediction_receipts_available": true,
     "fresh_preoutcome_row_count": 9760,
+    "fresh_outcome_scoring_protocol_frozen": true,
+    "fresh_outcome_decode_authorized": false,
     "fresh_exact_action_outcomes_available": false,
     "gpu_visible_in_current_environment": true,
     "gpu_access_boundary": "CUDA is visible only outside the filesystem sandbox; GPU execution requires an escalated command",

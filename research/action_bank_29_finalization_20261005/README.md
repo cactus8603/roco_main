@@ -217,6 +217,12 @@ retained, exact cross-invocation reproduction passes, and no official-flow path
 appears in a receipt. This removes feature/inference readiness as a blocker but
 does not grant outcome decode, rejection, or admission authority; see the
 [E285 report](../../experiments/E285_tartanair_r4_preoutcome_inference_v1/README.md).
+E286 freezes the corresponding outcome scorer and reject-only rules. It
+fail-closes before model initialization or output creation unless a separate
+authorization artifact binds the protocol and E285 receipt. Futility, clean
+harm, or catastrophe evidence may reject R4; a positive result can only survive
+phase 1 and still requires powered confirmation. See the
+[E286 report](../../experiments/E286_tartanair_r4_reject_only_scoring_v1/README.md).
 The [powered-panel options audit](POWERED_PANEL_OPTIONS_AUDIT.json) also checks
 the still-sealed KITTI H2 cohort using metadata only. Its 70 independent scenes
 meet the smallest 65-group planning threshold, but not the 136/607-group

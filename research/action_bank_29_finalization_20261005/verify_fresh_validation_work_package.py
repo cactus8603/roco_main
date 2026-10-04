@@ -159,6 +159,22 @@ def main() -> None:
     assert all(reproducibility["exact_matches"].values())
     assert not any(reproducibility["authority"].values())
 
+    scoring_source = package["frozen_sources"]["external_panel_r4_reject_only_scoring_protocol"]
+    scoring = _load(ROOT / scoring_source["path"])
+    assert scoring["status"] == "FROZEN_PRE_OUTCOME_NOT_AUTHORIZED"
+    assert scoring["outcome_stage"]["current_authorized"] is False
+    assert scoring["outcome_stage"]["current_official_flow_payloads_opened_by_e286"] == 0
+    assert scoring["phase1_decision"]["positive_admission_from_e286"] is False
+    assert not any(scoring["authority"].values())
+
+    scoring_tests_source = package["frozen_sources"]["external_panel_r4_scoring_tests"]
+    scoring_tests = _load(ROOT / scoring_tests_source["path"])
+    assert scoring_tests["status"] == "PASS"
+    assert scoring_tests["tests_run"] == 4
+    assert scoring_tests["failures"] == scoring_tests["errors"] == 0
+    assert scoring_tests["current_sealed_panel_members_opened_by_tests"] == 0
+    assert not any(scoring_tests["authority"].values())
+
     readiness = package["execution_readiness"]
     assert readiness["method_and_run_matrix_frozen"] is True
     assert readiness["primary_r4_confirmation_plan_frozen"] is True
@@ -177,6 +193,8 @@ def main() -> None:
     assert readiness["fresh_before_only_feature_records_available"] is True
     assert readiness["fresh_native_r4_prediction_receipts_available"] is True
     assert readiness["fresh_preoutcome_row_count"] == 9760
+    assert readiness["fresh_outcome_scoring_protocol_frozen"] is True
+    assert readiness["fresh_outcome_decode_authorized"] is False
     assert readiness["fresh_exact_action_outcomes_available"] is False
     assert readiness["gpu_visible_in_current_environment"] is True
     assert readiness["gpu_access_boundary"] == (

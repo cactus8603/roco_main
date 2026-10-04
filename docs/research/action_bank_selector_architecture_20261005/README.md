@@ -161,6 +161,9 @@ E285 已把 E284 的 R4-only pre-outcome 階段全部完成：9,760 rows 各有 
 content hash 與 60 維 before-only features，且獨立重跑同列可逐項 exact reproduce；receipt
 中沒有 official-flow path。這只解除 inference／feature readiness blocker，仍未授權解碼
 outcome，也不能讓 R4 進 final bank。
+E286 也已事前凍結 official-flow decoder、elastic GT transport、prediction hash replay 與
+5×4 nested grouped reject-only 決策。缺少另行授權檔時，scorer 會在模型初始化和任何 output
+建立前 fail closed；因此目前 flow payload decode 仍為零。
 
 被刪除的 5 個 optical anchors 是 Gaussian sigma `0.5`、unsharp amount `1.0`、radiometric
 blend `0.25 / 0.75` 與 matcher iterations `8`；它們在聯合搜尋中可由保留 anchors 覆蓋。

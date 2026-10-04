@@ -82,6 +82,22 @@ PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider tests/stablebr
 測試通過表示 contracts、state transitions、receipt binding 與數學工具符合目前規格，
 不等同於下游 correspondence 效益已通過 fresh scientific validation。
 
+## U0 native-only 資料準備
+
+U0 uncertainty observer 的資料規劃不依賴 action bank。以下命令只盤點並雜湊 native
+Spring flow RGB endpoints、凍結 scene-level split／中央 crop／augmentation probes；它不會
+解碼 GT、不會執行 matcher，也不會開始訓練：
+
+```bash
+PYTHONPATH=src python scripts/prepare_u0_native_data.py \
+  --config configs/stablebridge/u0_native_flow_data_v1.json \
+  --output experiments/U0_native_flow_data_v1/INPUT_PLAN.json
+```
+
+目前 development plan 包含 37 個 scene group、296 個 native pairs。GPU materializer 之後
+必須以 plan／split／probe hashes 產生 native flow、risk 與 probe receipts，才能建立正式的
+`U0NativeManifestV1`；這份 input plan 本身不具訓練、校準或部署 authority。
+
 ## 目前啟用邊界
 
 ```text

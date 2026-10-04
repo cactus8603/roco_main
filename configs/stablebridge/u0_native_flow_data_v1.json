@@ -1,0 +1,52 @@
+{
+  "contract": "CSB-U0-NATIVE-FLOW-DATA-v1-20261005",
+  "plan_id": "u0-native-flow-development-v1",
+  "registry": "configs/stablebridge/data_models_v1.json",
+  "dataset_key": "spring",
+  "model_profile": "main",
+  "matcher_provider_id": "croco-v2-main-flow-native",
+  "task": "flow",
+  "dataset_split": "train",
+  "view": "left",
+  "context_hw": [320, 384],
+  "crop_policy": "central_native_no_resize",
+  "frames_per_scene": 8,
+  "split_id": "spring-scene-u0-development-v1",
+  "splits": {
+    "fit": [
+      "0001", "0002", "0004", "0005", "0006", "0007", "0008",
+      "0009", "0010", "0011", "0012", "0013", "0014", "0015",
+      "0018", "0021", "0024", "0032", "0037", "0043", "0047"
+    ],
+    "validation": ["0016", "0020", "0023", "0025"],
+    "calibration": ["0030", "0033", "0036", "0038"],
+    "evaluation": ["0017", "0022", "0026", "0027", "0039", "0041", "0044", "0045"]
+  },
+  "probes": [
+    {
+      "probe_id": "roll-x8",
+      "transform": "shared_translation",
+      "shift_xy": [8, 0],
+      "scalar": 1.0
+    },
+    {
+      "probe_id": "roll-y8",
+      "transform": "shared_translation",
+      "shift_xy": [0, 8],
+      "scalar": 1.0
+    },
+    {
+      "probe_id": "exposure-080",
+      "transform": "shared_exposure",
+      "shift_xy": [0, 0],
+      "scalar": 0.8
+    },
+    {
+      "probe_id": "gamma-120",
+      "transform": "shared_gamma",
+      "shift_xy": [0, 0],
+      "scalar": 1.2
+    }
+  ],
+  "scientific_scope": "development-only native-flow uncertainty data plan; historical exposure is not fully audited; no label decode, matcher forward, training, calibration, efficacy, safety, or deployment claim"
+}

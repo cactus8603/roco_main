@@ -1,6 +1,6 @@
 {
   "schema": "stablebridge-integrated-uncertainty-trainer/v2",
-  "run_dir": "/ssd1/cactus8603/roco_main/experiments/U2_sintel_searaft_head_only_v2/seed11",
+  "run_dir": "/ssd1/cactus8603/roco_main/experiments/U2_sintel_searaft_action_bank_training_u0ft_v1/seed11",
   "dataset": {
     "factory": "stablebridge.physical_repair.u0_sintel_dataset:build_sintel_integrated_dataset_from_config_v2",
     "kwargs": {
@@ -15,13 +15,21 @@
   "model": {
     "factory": "stablebridge.physical_repair.integrated_uncertainty_flow:make_pinned_uncertainty_aware_sea_raft_v2",
     "kwargs": {
-      "variant": "head_only",
-      "trainable_scope": "uncertainty_only",
+      "variant": "refinement_with_uncertainty",
+      "trainable_scope": "all",
       "refinement_channels": 64,
+      "maximum_update_px": 1.0,
       "vendor_root": "/ssd7/cactus8603/roco_spring/optical-flow-track/vendor/SEA-RAFT",
       "config_path": "/ssd7/cactus8603/roco_spring/optical-flow-track/vendor/SEA-RAFT/config/eval/spring-M.json",
       "checkpoint": "/ssd7/cactus8603/roco_spring/optical-flow-track/checkpoints/sea-raft-spring-M/model.safetensors"
     }
+  },
+  "uncertainty_initialization_checkpoint": "/ssd1/cactus8603/roco_main/experiments/U0_sintel_searaft_recurrent_finetune_v2/seed11/best.pt",
+  "refiner_initialization_checkpoint": "/ssd1/cactus8603/roco_main/experiments/U1_sintel_searaft_recurrent_refiner_u0ft_v2/seed11/best.pt",
+  "u2_schedule": {
+    "mode": "alternating_decoupled",
+    "observer_epochs_per_round": 1,
+    "flow_epochs_per_round": 1
   },
   "loss": {
     "task_weight": 1.0,
@@ -43,6 +51,24 @@
     "gradient_clip_norm": 1.0,
     "pin_memory": true,
     "augmentation_start_epoch": 0
+  },
+  "action_bank": {
+    "mode": "cycle",
+    "action_ids": [
+      "CSB/OF/SEA-RAFT/action/P0",
+      "CSB/OF/SEA-RAFT/action/V3-gaussian-s0p5",
+      "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+      "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+      "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+      "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+      "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+      "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+      "CSB/OF/SEA-RAFT/action/P4-iters8",
+      "CSB/OF/SEA-RAFT/action/R7-iters12"
+    ],
+    "validation_action_id": "CSB/OF/SEA-RAFT/action/P0",
+    "bank_hash": "eddd71535ed30b86428ce55291b71419c4b86eac0c08cf91d7bae466c50061ce",
+    "source_manifest_sha256": "44cca26c88c42430f59be890ea58290af4d233ab81056f3f15776121ae7aa065"
   },
   "metric_spatial_stride": 8,
   "iters": 4,

@@ -79,6 +79,28 @@ def test_head_only_freezes_matcher_and_never_changes_flow():
     assert all(not parameter.requires_grad for parameter in wrapped.recurrent_head.refinement_head.parameters())
 
 
+def test_refiner_only_freezes_matcher_and_uncertainty_and_bounds_update():
+    torch.manual_seed(7)
+    wrapped = UncertaintyAwareSeaRaftV2(
+        TinySeaRaft(), variant="refinement_with_uncertainty",
+        trainable_scope="refiner_only", refinement_channels=8,
+        maximum_update_px=0.25,
+    )
+    assert all(not parameter.requires_grad for parameter in wrapped.backbone.encoder.parameters())
+    assert all(not parameter.requires_grad for parameter in wrapped.recurrent_head.base_head.parameters())
+    assert all(not parameter.requires_grad for parameter in wrapped.recurrent_head.uncertainty_head.parameters())
+    assert all(parameter.requires_grad for parameter in wrapped.recurrent_head.refinement_head.parameters())
+
+    image = torch.rand(2, 3, 5, 7) * 255
+    with wrapped.refinement_disabled():
+        base = wrapped(image, image, iters=1)["flow"][-1]
+    with torch.no_grad():
+        wrapped.recurrent_head.refinement_head[-1].bias.copy_(torch.tensor([3.0, 4.0]))
+    refined = wrapped(image, image, iters=1)["flow"][-1]
+    update = torch.linalg.vector_norm(refined - base, dim=1)
+    assert float(update.max()) <= 0.250001
+
+
 def test_affine_flow_transport_transforms_vectors_and_support():
     flow = torch.zeros(1, 2, 4, 5)
     flow[:, 0] = 1.0

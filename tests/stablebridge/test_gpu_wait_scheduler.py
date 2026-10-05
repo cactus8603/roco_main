@@ -9,6 +9,7 @@ from stablebridge.physical_repair.gpu_wait_scheduler import (
     build_child_environment,
     build_watchdog_argv,
     choose_gpu,
+    classify_retryable_resource_failure,
     parse_gpu_csv,
 )
 
@@ -56,9 +57,13 @@ def test_atomic_process_lock_prevents_duplicate_and_recovers_stale(tmp_path):
 
 def test_child_environment_and_watchdog_argv_are_shell_free(tmp_path):
     selected = parse_gpu_csv(GPU_CSV)[1]
-    environment = build_child_environment({"PATH": os.environ.get("PATH", "")}, selected)
+    environment = build_child_environment(
+        {"PATH": os.environ.get("PATH", "")}, selected,
+        resource_retry_count=2,
+    )
     assert environment["CUDA_VISIBLE_DEVICES"] == "1"
     assert environment["STABLEBRIDGE_PHYSICAL_GPU_UUID"] == "GPU-b"
+    assert environment["STABLEBRIDGE_RESOURCE_RETRY_COUNT"] == "2"
 
     options = SchedulerOptionsV1(
         state_dir=tmp_path / "state with spaces",
@@ -66,12 +71,26 @@ def test_child_environment_and_watchdog_argv_are_shell_free(tmp_path):
         maximum_utilization_percent=5,
         poll_seconds=17,
         allowed_indices=frozenset({1, 3}),
+        max_resource_retries=1,
     )
     command = ["python", "train.py", "--literal", "$HOME and spaces"]
     argv = build_watchdog_argv(tmp_path / "launcher.py", options, command)
     separator = argv.index("--")
     assert argv[separator + 1 :] == command
     assert argv[argv.index("--allowed-indices") + 1] == "1,3"
+    assert argv[argv.index("--max-resource-retries") + 1] == "1"
+
+
+def test_resource_retry_classification_is_narrow():
+    assert classify_retryable_resource_failure(
+        "RuntimeError: CUDA error: CUBLAS_STATUS_ALLOC_FAILED"
+    ) == "CUBLAS_STATUS_ALLOC_FAILED"
+    assert classify_retryable_resource_failure(
+        "torch.OutOfMemoryError: CUDA out of memory"
+    ) == "TORCH_CUDA_OUT_OF_MEMORY"
+    assert classify_retryable_resource_failure(
+        "RuntimeError: invalid tensor shape"
+    ) is None
 
 
 def test_parser_rejects_inconsistent_or_duplicate_rows():

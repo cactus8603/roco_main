@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
+import copy
 import json
 from pathlib import Path
 
@@ -22,9 +24,14 @@ from stablebridge.physical_repair.candidate_action_bank import (
 
 
 class TinyIntegratedDataset(Dataset):
-    def __init__(self, *, split: str, length: int = 3):
+    def __init__(
+        self, *, split: str, length: int = 3, fusion_context: bool = False,
+        sam_context: bool = False, **_kwargs,
+    ):
         self.split = split
         self.length = length
+        self.fusion_context = fusion_context
+        self.sam_context = sam_context
         self.epoch = 0
         self.action_id = OPTICAL_NATIVE_ACTION_ID
 
@@ -42,7 +49,7 @@ class TinyIntegratedDataset(Dataset):
         native = torch.rand(2, 3, 4, 5, generator=generator)
         augmented = (native * 0.9).clamp(0, 1)
         truth = torch.stack((native[0, 0] * 0.1, native[0, 1] * -0.1))
-        return {
+        result = {
             "native_frames": native,
             "augmented_frames": augmented,
             "augmentation_valid": torch.ones(1, 4, 5, dtype=torch.bool),
@@ -55,10 +62,22 @@ class TinyIntegratedDataset(Dataset):
                 8 if self.action_id.endswith("P4-iters8") else None
             ),
         }
+        if self.fusion_context:
+            result["fusion_frames"] = torch.cat((native[:1], native), dim=0)
+        if self.sam_context:
+            result["sam_segment_ids"] = torch.ones(1, 4, 5, dtype=torch.int64)
+        return result
 
 
-def make_tiny_integrated_dataset(*, split: str, length: int = 3):
-    return TinyIntegratedDataset(split=split, length=length)
+def make_tiny_integrated_dataset(
+    *, split: str, length: int = 3, fusion_context: bool = False,
+    sam_context: bool = False, **kwargs,
+):
+    del kwargs
+    return TinyIntegratedDataset(
+        split=split, length=length, fusion_context=fusion_context,
+        sam_context=sam_context,
+    )
 
 
 def collate_tiny_integrated(samples):
@@ -75,23 +94,50 @@ def collate_tiny_integrated(samples):
 
 
 class TinyIntegratedModel(nn.Module):
-    def __init__(self):
+    def __init__(self, *, variant: str):
         super().__init__()
+        self.variant = variant
         self.network = nn.Conv2d(6, 3, 1)
         self.recurrent_head = nn.Module()
         self.recurrent_head.uncertainty_head = nn.Conv2d(1, 1, 1)
+        self.recurrent_head.refinement_head = nn.Conv2d(3, 2, 1)
+        nn.init.zeros_(self.recurrent_head.refinement_head.weight)
+        nn.init.zeros_(self.recurrent_head.refinement_head.bias)
+        self.refinement_enabled = True
+
+    @contextmanager
+    def refinement_disabled(self):
+        previous = self.refinement_enabled
+        self.refinement_enabled = False
+        try:
+            yield
+        finally:
+            self.refinement_enabled = previous
 
     def forward(self, first, second, *, iters, test_mode):
         del test_mode
         prediction = self.network(torch.cat((first, second), dim=1) / 255.0)
-        flows = [prediction[:, :2] * (index + 1) / (iters + 1) for index in range(iters + 1)]
-        alphas = [prediction[:, 2:3] for _ in range(iters + 1)]
+        alpha = self.recurrent_head.uncertainty_head(prediction[:, 2:3])
+        flow = prediction[:, :2]
+        if self.variant != "head_only" and self.refinement_enabled:
+            evidence = alpha.detach() if self.variant == "refinement_with_uncertainty" else torch.zeros_like(alpha)
+            flow = flow + self.recurrent_head.refinement_head(torch.cat((flow, evidence), dim=1))
+        flows = [flow * (index + 1) / (iters + 1) for index in range(iters + 1)]
+        alphas = [alpha for _ in range(iters + 1)]
         return {"flow": flows, "uncertainty_log_variance": alphas, "final": flows[-1]}
 
 
-def make_tiny_integrated_model(*, device: str, variant: str, trainable_scope: str):
-    del variant, trainable_scope
-    return TinyIntegratedModel().to(device)
+def make_tiny_integrated_model(
+    *, device: str, variant: str, trainable_scope: str, **_kwargs,
+):
+    model = TinyIntegratedModel(variant=variant).to(device)
+    if trainable_scope != "all":
+        model.requires_grad_(False)
+    if trainable_scope in {"uncertainty_only", "refinement_heads"}:
+        model.recurrent_head.uncertainty_head.requires_grad_(True)
+    if trainable_scope in {"refiner_only", "refinement_heads"}:
+        model.recurrent_head.refinement_head.requires_grad_(True)
+    return model
 
 
 def _config(run_dir: Path) -> IntegratedTrainerConfigV2:
@@ -158,10 +204,131 @@ def test_integrated_trainer_runs_validates_and_resumes(tmp_path):
     assert resumed.global_step == trainer.global_step
 
 
+def test_resume_loads_checkpoint_on_cpu_for_rng_contract(tmp_path, monkeypatch):
+    config = _config(tmp_path / "cpu-map-resume")
+    trainer = IntegratedUncertaintyTrainerV2(config, device="cpu")
+    trainer.save()
+    resumed = IntegratedUncertaintyTrainerV2(config, device="cpu")
+    real_load = torch.load
+    observed = []
+
+    def recording_load(*args, **kwargs):
+        observed.append(kwargs.get("map_location"))
+        return real_load(*args, **kwargs)
+
+    monkeypatch.setattr(
+        "stablebridge.physical_repair.integrated_uncertainty_trainer.torch.load",
+        recording_load,
+    )
+    resumed.resume(trainer.latest_path)
+    assert observed == ["cpu"]
+
+
+def test_sam_homography_requires_traced_dataset_and_runs_in_flow_phase(tmp_path):
+    value = _config(tmp_path / "sam-u2").serializable()
+    value["sam_homography"] = {
+        "enabled": True,
+        "weight": 0.1,
+        "maximum_regions": 6,
+        "uncertainty_variance_threshold": 2.0,
+        "minimum_reliable_points": 4,
+        "minimum_reliable_fraction": 0.2,
+        "ransac_reprojection_threshold": 3.0,
+        "minimum_inlier_fraction": 0.5,
+        "per_region_loss_cap": 0.5,
+    }
+    with pytest.raises(ValueError, match="traced full-segmentation"):
+        IntegratedTrainerConfigV2.from_mapping(value)
+    value["dataset"]["kwargs"].update({
+        "sam_context": True,
+        "sam_full_segmentation_root": "/not-read-by-test-double",
+        "sam_checkpoint_sha256": "a" * 64,
+    })
+    trainer = IntegratedUncertaintyTrainerV2(
+        IntegratedTrainerConfigV2.from_mapping(value), device="cpu",
+    )
+    raw = next(iter(trainer._loader(trainer.fit_dataset, training=True, epoch=0)))
+    losses, _native, _base = trainer._forward_loss(
+        trainer._move(raw), augmentation_enabled=True, phase="flow",
+    )
+    assert losses.sam_homography.ndim == 0
+    assert losses.sam_candidate_regions >= losses.sam_fitted_regions >= 0
+
+
+def test_optional_three_frame_fusion_reports_separate_validation_metrics(tmp_path):
+    value = _config(tmp_path / "fusion-validation").serializable()
+    value["dataset"]["kwargs"]["fusion_context"] = True
+    value["fusion"] = {
+        "enabled": True,
+        "optimization_steps": 1,
+        "uncertainty_variance_threshold": 45.0,
+        "learning_rate": 0.001,
+        "learning_rate_decay": 0.8,
+        "variance_minimum": 0.001,
+        "variance_maximum": 200.0,
+        "random_seed": 17,
+    }
+    trainer = IntegratedUncertaintyTrainerV2(
+        IntegratedTrainerConfigV2.from_mapping(value), device="cpu",
+    )
+    metrics = trainer.validate(0)
+    assert metrics["fusion_enabled"] is True
+    assert isinstance(metrics["fusion_epe"], float)
+    assert 0.0 <= metrics["fusion_replaced_fraction"] <= 1.0
+    assert trainer.selection_metric == "epe"
+
+
 def test_head_only_config_must_freeze_matcher(tmp_path):
     value = _config(tmp_path / "run").serializable()
     value["model"]["kwargs"]["variant"] = "head_only"
     with pytest.raises(ValueError, match="must freeze"):
+        IntegratedTrainerConfigV2.from_mapping(value)
+
+
+def test_u1_requires_refiner_only_scope_zero_decoupled_loss_and_u0(tmp_path):
+    value = _config(tmp_path / "u1").serializable()
+    value["model"]["kwargs"]["trainable_scope"] = "refiner_only"
+    value["uncertainty_initialization_checkpoint"] = str(tmp_path / "u0.pt")
+    value["loss"].update({
+        "task_weight": 0.0,
+        "augmentation_weight": 0.0,
+        "uncertainty_weight": 0.0,
+    })
+    value["refiner_loss"] = {
+        "task_weight": 1.0,
+        "harm_weight": 2.0,
+        "anchor_weight": 0.05,
+        "smoothness_weight": 0.01,
+        "harm_margin_px": 0.0,
+        "charbonnier_epsilon": 0.001,
+    }
+    parsed = IntegratedTrainerConfigV2.from_mapping(value)
+    assert parsed.refiner_loss is not None
+
+    value["model"]["kwargs"]["trainable_scope"] = "refinement_heads"
+    with pytest.raises(ValueError, match="configured together"):
+        IntegratedTrainerConfigV2.from_mapping(value)
+
+
+def test_u2_schedule_requires_u1_checkpoint_all_scope_and_complete_rounds(tmp_path):
+    value = _config(tmp_path / "u2-contract").serializable()
+    value["uncertainty_initialization_checkpoint"] = str(tmp_path / "u0.pt")
+    value["u2_schedule"] = {
+        "mode": "alternating_decoupled",
+        "observer_epochs_per_round": 1,
+        "flow_epochs_per_round": 1,
+    }
+    with pytest.raises(ValueError, match="configured together"):
+        IntegratedTrainerConfigV2.from_mapping(value)
+
+    value["refiner_initialization_checkpoint"] = str(tmp_path / "u1.pt")
+    value["training"]["epochs"] = 3
+    with pytest.raises(ValueError, match="complete alternating rounds"):
+        IntegratedTrainerConfigV2.from_mapping(value)
+
+    value["training"]["epochs"] = 2
+    value["model"]["kwargs"]["trainable_scope"] = "refinement_heads"
+    with pytest.raises(ValueError, match="all parameters"):
         IntegratedTrainerConfigV2.from_mapping(value)
 
 
@@ -213,6 +380,165 @@ def test_u2_loads_completed_native_head_only_initialization(tmp_path):
     assert all(
         torch.equal(parameter, torch.full_like(parameter, 0.375))
         for parameter in target.model.recurrent_head.uncertainty_head.state_dict().values()
+    )
+
+
+def test_u2_loads_matching_u1_and_alternates_disjoint_gradient_phases(tmp_path):
+    u0_value = _config(tmp_path / "u0").serializable()
+    u0_value["model"]["kwargs"].update({
+        "variant": "head_only",
+        "trainable_scope": "uncertainty_only",
+    })
+    u0 = IntegratedUncertaintyTrainerV2(
+        IntegratedTrainerConfigV2.from_mapping(u0_value), device="cpu",
+    )
+    assert u0.train() == 0
+
+    u1_value = _config(tmp_path / "u1").serializable()
+    u1_value["model"]["kwargs"]["trainable_scope"] = "refiner_only"
+    u1_value["uncertainty_initialization_checkpoint"] = str(u0.best_path)
+    u1_value["loss"].update({
+        "task_weight": 0.0,
+        "augmentation_weight": 0.0,
+        "uncertainty_weight": 0.0,
+    })
+    u1_value["refiner_loss"] = {
+        "task_weight": 1.0,
+        "harm_weight": 2.0,
+        "anchor_weight": 0.05,
+        "smoothness_weight": 0.01,
+        "harm_margin_px": 0.0,
+        "charbonnier_epsilon": 0.001,
+    }
+    u1 = IntegratedUncertaintyTrainerV2(
+        IntegratedTrainerConfigV2.from_mapping(u1_value), device="cpu",
+    )
+    assert u1.train() == 0
+
+    u2_value = _config(tmp_path / "u2").serializable()
+    u2_value["training"]["epochs"] = 4
+    u2_value["uncertainty_initialization_checkpoint"] = str(u0.best_path)
+    u2_value["refiner_initialization_checkpoint"] = str(u1.best_path)
+    u2_value["u2_schedule"] = {
+        "mode": "alternating_decoupled",
+        "observer_epochs_per_round": 1,
+        "flow_epochs_per_round": 1,
+    }
+    u2_value["action_bank"] = {
+        "mode": "cycle",
+        "action_ids": [
+            OPTICAL_NATIVE_ACTION_ID,
+            "CSB/OF/SEA-RAFT/action/P4-iters8",
+        ],
+        "validation_action_id": OPTICAL_NATIVE_ACTION_ID,
+        "bank_hash": OPTICAL_FLOW_CAPACITY_BANK_HASH,
+        "source_manifest_sha256": OPTICAL_FLOW_CAPACITY_SOURCE_MANIFEST_SHA256,
+    }
+    u2 = IntegratedUncertaintyTrainerV2(
+        IntegratedTrainerConfigV2.from_mapping(u2_value), device="cpu",
+    )
+    assert u2.refiner_initialization_lineage is not None
+    source = torch.load(u1.best_path, map_location="cpu", weights_only=False)
+    for name, parameter in u2.model.recurrent_head.refinement_head.state_dict().items():
+        assert torch.equal(
+            parameter,
+            source["model"][f"recurrent_head.refinement_head.{name}"],
+        )
+
+    bad_dir = tmp_path / "u1-wrong-lineage"
+    bad_dir.mkdir()
+    bad_source = copy.deepcopy(source)
+    bad_source["uncertainty_initialization_lineage"]["checkpoint_sha256"] = "0" * 64
+    bad_checkpoint = bad_dir / "best.pt"
+    torch.save(bad_source, bad_checkpoint)
+    (bad_dir / "metrics.jsonl").write_text(
+        json.dumps({"event": "training_completed"}) + "\n",
+        encoding="utf-8",
+    )
+    bad_value = copy.deepcopy(u2_value)
+    bad_value["refiner_initialization_checkpoint"] = str(bad_checkpoint)
+    with pytest.raises(ValueError, match="different U0 observer"):
+        IntegratedUncertaintyTrainerV2(
+            IntegratedTrainerConfigV2.from_mapping(bad_value), device="cpu",
+        )
+
+    phase, round_index = u2._configure_training_phase(0)
+    assert (phase, round_index) == ("observer", 0)
+    assert all(
+        parameter.requires_grad
+        for parameter in u2.model.recurrent_head.uncertainty_head.parameters()
+    )
+    assert all(
+        not parameter.requires_grad
+        for parameter in u2.model.recurrent_head.refinement_head.parameters()
+    )
+    assert all(not parameter.requires_grad for parameter in u2.model.network.parameters())
+
+    raw = next(iter(u2._loader(u2.fit_dataset, training=True, epoch=0)))
+    batch = u2._move(raw)
+    observer_losses, _native, _base = u2._forward_loss(
+        batch, augmentation_enabled=True, phase="observer",
+    )
+    observer_losses.total.backward()
+    assert any(
+        parameter.grad is not None and float(parameter.grad.abs().sum()) > 0.0
+        for parameter in u2.model.recurrent_head.uncertainty_head.parameters()
+    )
+    assert all(
+        parameter.grad is None
+        for parameter in u2.model.recurrent_head.refinement_head.parameters()
+    )
+    assert all(parameter.grad is None for parameter in u2.model.network.parameters())
+    u2.optimizer.zero_grad(set_to_none=True)
+
+    phase, round_index = u2._configure_training_phase(1)
+    assert (phase, round_index) == ("flow", 0)
+    assert all(
+        not parameter.requires_grad
+        for parameter in u2.model.recurrent_head.uncertainty_head.parameters()
+    )
+    assert all(
+        parameter.requires_grad
+        for parameter in u2.model.recurrent_head.refinement_head.parameters()
+    )
+    assert all(parameter.requires_grad for parameter in u2.model.network.parameters())
+
+    flow_losses, _native, _base = u2._forward_loss(
+        batch, augmentation_enabled=True, phase="flow",
+    )
+    flow_losses.total.backward()
+    assert all(
+        parameter.grad is None
+        for parameter in u2.model.recurrent_head.uncertainty_head.parameters()
+    )
+    assert any(
+        parameter.grad is not None and float(parameter.grad.abs().sum()) > 0.0
+        for parameter in u2.model.recurrent_head.refinement_head.parameters()
+    )
+    assert any(
+        parameter.grad is not None and float(parameter.grad.abs().sum()) > 0.0
+        for parameter in u2.model.network.parameters()
+    )
+    u2.optimizer.zero_grad(set_to_none=True)
+
+    assert u2.train() == 0
+    rows = [json.loads(line) for line in u2.metrics_path.read_text().splitlines()]
+    phases = {row.get("phase") for row in rows if row.get("event") == "train_step"}
+    assert phases == {"observer", "flow"}
+    steps = [row for row in rows if row.get("event") == "train_step"]
+    epoch_actions = {
+        row["epoch"]: (row["phase"], row["action_id"])
+        for row in steps
+    }
+    assert epoch_actions == {
+        0: ("observer", OPTICAL_NATIVE_ACTION_ID),
+        1: ("flow", OPTICAL_NATIVE_ACTION_ID),
+        2: ("observer", "CSB/OF/SEA-RAFT/action/P4-iters8"),
+        3: ("flow", "CSB/OF/SEA-RAFT/action/P4-iters8"),
+    }
+    checkpoint = torch.load(u2.latest_path, map_location="cpu", weights_only=False)
+    assert checkpoint["refiner_initialization_lineage"] == (
+        u2.refiner_initialization_lineage
     )
 
 

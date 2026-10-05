@@ -117,7 +117,11 @@ U²Flow pipeline 另需 Raw、2012/2015 multi-view 與 SAM masks。
 - 基本取樣單位固定為同 scene 的相鄰二幀 `(t, t+1)`；Clean／Final 共 2,082 筆
   render-specific rows，依 scene 分成 fit／validation／calibration／evaluation。
 - 三幀只保留給未來 bidirectional fusion，`fusion_context_enabled=false`，不改變目前二幀
-  observer 的訓練語意；啟用時採 `[previous,current,next]`，scene 起點重複第一幀。
+  observer 的訓練語意；啟用時採 `[previous,current,next]`，scene 起點重複第一幀。現在已有
+  disabled-by-default 的 U²Flow-style inference／validation post-process：以 `current→next`
+  與 `current→previous` 兩次二幀推論，在雙向皆可信的區域逐 sample 擬合 Tiny CNN，只替換
+  forward 不可信而 backward 可信的像素。它不進 training loss，未加入任何正式 config，
+  因此現行 U0→U1→U2→9A lineage 仍是原本的 two-frame 語意。
 - `sample_u2flow_role_recipe_v1` 強制 fit 使用由 `(master seed, epoch, row id)` 派生的 random
   native crop；validation 使用 epoch-invariant appearance probe＋center crop，calibration／evaluation
   使用 identity appearance＋center crop。crop 採 U²Flow 公開程式的 384×832；論文文字中的
@@ -198,9 +202,19 @@ PYTHONPATH=src /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python 
   --device cuda --resume auto
 ```
 
-完成後，兩個 refiner configs 與 9-anchor training config 會 fail-closed 地載入這份
-native-only head checkpoint，核對 config digest、matcher lineage、iteration count、完成 receipt
-及 checkpoint SHA-256，再開始後續訓練。
+完成後，U1 會 fail-closed 地載入這份 native-only head checkpoint，核對 config digest、
+matcher lineage、iteration count、完成 receipt 及 checkpoint SHA-256，再開始 refiner 訓練。
+
+正式 U1 先凍結 SEA-RAFT 與 recurrent U0，只訓練每步最多 1 px 的 bounded refiner。
+objective 同時包含 task、相對 frozen base 的 per-pixel harm、anchor 與 smoothness；validation
+並列保存 `base_epe` 與 refined `epe`：
+
+```bash
+PYTHONPATH=src /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python \
+  scripts/train_integrated_uncertainty_flow.py \
+  --config configs/stablebridge/u1_sintel_searaft_recurrent_refiner_v2.json \
+  --device cuda --resume auto
+```
 
 主模型命令：
 
@@ -211,9 +225,18 @@ PYTHONPATH=src /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python 
   --device cuda --resume auto
 ```
 
+U2 必須同時載入同一條 lineage 的 completed U0 與 U1。每一 round 先進行 observer phase
+（只更新 uncertainty head；flow objectives 關閉），再進行 flow phase（凍結 uncertainty，
+只開啟 task／augmentation flow objectives）。checkpoint 保存兩份 initialization lineage、
+phase cursor 由 epoch 決定，resume 不允許更換任一來源。`refinement_without_uncertainty`
+消融需先使用獨立的
+`u1_sintel_searaft_recurrent_refiner_no_uncertainty_v2.json` 訓練 parameter-matched U1；不得
+沿用 uncertainty-guided U1 refiner。
+
 9-anchor E292 capacity bank 已接到同一個 dataset／trainer。正式介面使用 epoch-homogeneous
 action scheduling，避免同一 batch 混入不同 SEA-RAFT recurrent iteration counts；預設 20
-epochs 依序走 `native + 9 anchors` 兩輪，而 validation 固定 native，讓 checkpoint 選擇可比：
+epochs 組成 10 個 U2 rounds，每個 `native + 9 anchors` action 依序各跑一個 observer phase
+與一個 flow phase，而 validation 固定 native，讓 checkpoint 選擇可比：
 
 ```bash
 PYTHONPATH=src /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python \
@@ -226,14 +249,17 @@ bank 定義在 `configs/stablebridge/optical_flow_capacity_9anchor_v1.json`。�
 會保存 bank hash 與 E292 source-manifest hash；每個 train-step receipt 也記錄 action 與實際
 matcher iterations。影像 operators 同時套用在 native／augmented pair，iterations 8／12
 則直接覆寫該 epoch 的 matcher 迭代數。這仍是 capacity-aware training，不等同 action
-selector 已通過 fresh admission。
+selector 已通過 fresh admission。這個 capacity run 也不能取代上述 U0→U1→U2 qualification；
+應在 U2 provider 確認後另行 rebase，而不是把尚未配對的 U0/U1 checkpoint 混入正式 U2。
 
 每次 validation 都保存 task／augmentation／uncertainty loss，以及 held-out GT 的 EPE、AUSE、
 Spearman、severe-error AUROC 與 coverage calibration MAE。現有資料只有 Sintel Clean/Final，
 因此 v2 以 Sintel GT 作 flow task carrier，而 uncertainty supervision 仍只來自 augmentation
 consistency；這是 U²Flow-style SEA-RAFT adaptation，不宣稱是論文的 Raw→Clean/Final 完整
 unsupervised reproduction。配置使用 SEA-RAFT Spring-M 的 4 recurrent iterations；所有消融都
-固定相同 K。
+固定相同 K。EPE 使用全部有效像素 streaming 累計；需要排序的 uncertainty metrics 使用
+config 綁定的 deterministic `metric_spatial_stride=8` grid，避免 full-resolution validation
+一次展開數千萬像素造成記憶體爆量。
 
 先前的 `train_u1_flow_refiner.py` 與 `train_u2_uncertainty_flow.py` 保留為 one-shot post-hoc／
 alternating ablation，但不是主模型，也不可標成 U²Flow reproduction。
@@ -244,14 +270,47 @@ integrated trainer 可沿用 durable GPU scheduler：
 PYTHONPATH=src /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python \
   scripts/run_gpu_training_when_free.py start \
   --state-dir operations/U2_sintel_searaft_uncertainty_refinement_v2_seed11 \
-  --minimum-free-mib 16000 --maximum-utilization-percent 10 \
+  --minimum-free-mib 22000 --maximum-utilization-percent 10 \
+  --poll-seconds 180 --max-resource-retries 3 \
   --allowed-indices 0,1,2,3,4,5,6 -- \
   /usr/bin/env PYTHONPATH=/ssd1/cactus8603/roco_main/src:/ssd1/cactus8603/roco_main \
   /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python \
   /ssd1/cactus8603/roco_main/scripts/train_integrated_uncertainty_flow.py \
   --config /ssd1/cactus8603/roco_main/configs/stablebridge/u2_sintel_searaft_uncertainty_refinement_v2.json \
-  --device cuda --resume auto
+  --device cuda --resume auto --reserve-vram \
+  --target-vram-fraction 0.88 --vram-headroom-mib 3072
 ```
+
+checkpoint resume 一律先在 CPU 還原 RNG state，再把 model／optimizer state 搬到目標裝置，
+避免 CUDA `map_location` 把 `torch.set_rng_state` 所需的 CPU ByteTensor 搬錯裝置。scheduler
+每 180 秒重查一次，只有 free VRAM ≥ 22,000 MiB 且 utilization ≤ 10% 才取得該卡鎖；
+resource retry count 會傳入 child。可選的 CUDA memory guard 先初始化 cuBLAS，再把 PyTorch
+allocator cache 補到 88% 高水位並保留至少 3 GiB library headroom；每次 resource retry 會把
+目標降低 5%，最低 65%，避免保留策略本身形成 OOM retry loop。
+
+SAM 版 U2 使用獨立 config／run directory，不會把新 objective 插入已開始的 U2 checkpoint：
+
+```bash
+PYTHONPATH=src /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python \
+  scripts/run_sam_u2_training.py \
+  --trainer-config configs/stablebridge/u2_sintel_searaft_uncertainty_refinement_sam_u0ft_v1.json \
+  --data-config configs/stablebridge/u0_sintel_u2flow_data_v1.json \
+  --sam-output-root .runtime_tmp/sam_fullseg_sintel_vit_h \
+  --sam-source .runtime_tmp/segment-anything-src \
+  --sam-checkpoint .runtime_tmp/sam_vit_h_4b8939.pth \
+  --sam-model-type vit_h --device cuda --resume auto
+```
+
+mask generator 固定官方 SAM ViT-H checkpoint SHA-256
+`a7bf3b02f3ebf1267aba913ff637d9a2d5c33d3173bb679e46d9f338c26f262e`，並依
+UnSAMFlow 做 smallest-mask-priority full segmentation。完成 manifest 逐檔保存 source／mask
+digest；dataset fail-closed 核對 root、checkpoint digest、完整狀態與每張 mask。flow phase
+才加入 uncertainty-guided regional homography loss（最多 6 regions、variance threshold 2、
+20% reliable support、RANSAC inlier ≥ 50%）；observer phase 不吃這條 gradient。
+
+WAFT cross-backbone adapter 已實作相同 trainer contract，但
+`configs/stablebridge/waft_cross_backbone_disabled_v1.json` 明確保持 `enabled=false`：尚未固定
+WAFT checkpoint，也尚未各自訓練 WAFT U0／U1，因此不會進入本輪 scheduler 或冒充可比結果。
 
 Action-bank selector 的 nested grouped trainer 已存在於
 `research/action_bank_29_finalization_20261005/train_dynamic_group_router.py`。它要等 frozen
@@ -295,7 +354,8 @@ python scripts/verify_kitti_u2flow_data.py --verify-zip
 的訓練或調參；官方 U²Flow 雖把 multiview testing 影像納入 stage-2，若要重現該 transductive
 protocol 必須另開明示設定。所有 KITTI 下載皆受官方註冊、用途與資料政策約束，不只 Raw。
 完整 stage-1 所需的 Raw drives 本次未納入；SAM key-object／full-seg masks 必須由影像產生，
-不是這四包官方資料的一部分，也明確標為尚未具備。
+不是這四包官方資料的一部分。本版已加入官方 ViT-H full-seg 產生與 lineage 驗證，但大型
+checkpoint／masks 保留在 `.runtime_tmp`、由 GPU 排程產生，不進 Git。
 
 ## 目前啟用邊界
 

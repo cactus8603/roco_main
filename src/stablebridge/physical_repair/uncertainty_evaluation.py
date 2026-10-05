@@ -39,13 +39,14 @@ def _average_ranks(value: np.ndarray) -> np.ndarray:
     order = np.argsort(value, kind="mergesort")
     sorted_value = value[order]
     ranks = np.empty(value.size, dtype=np.float64)
-    start = 0
-    while start < value.size:
-        end = start + 1
-        while end < value.size and sorted_value[end] == sorted_value[start]:
-            end += 1
-        ranks[order[start:end]] = 0.5 * (start + end - 1) + 1.0
-        start = end
+    # Vectorized tie groups avoid a Python loop per pixel for dense maps.
+    starts_mask = np.empty(value.size, dtype=bool)
+    starts_mask[0] = True
+    starts_mask[1:] = sorted_value[1:] != sorted_value[:-1]
+    starts = np.flatnonzero(starts_mask)
+    ends = np.concatenate((starts[1:], np.asarray((value.size,), dtype=starts.dtype)))
+    average = 0.5 * (starts + ends - 1) + 1.0
+    ranks[order] = np.repeat(average, ends - starts)
     return ranks
 
 

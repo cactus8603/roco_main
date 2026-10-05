@@ -1,0 +1,24 @@
+{
+  "schema": "stablebridge-cross-backbone-provider/v1",
+  "enabled": false,
+  "activation_status": "adapter_ready_assets_not_pinned_not_scheduled",
+  "provider": "WAFT",
+  "upstream_repository": "https://github.com/princeton-vl/WAFT",
+  "upstream_commit": "b152ff1cad1af8c185ee7b141997c48ff3334c87",
+  "factory": "stablebridge.physical_repair.waft_uncertainty_adapter:make_pinned_uncertainty_aware_waft_v1",
+  "recommended_upstream_config": "config/a2/twins/tar-c-t-sintel.json",
+  "required_before_activation": [
+    "pin a WAFT checkpoint and its sha256",
+    "train WAFT-specific U0 observer",
+    "train WAFT-specific U1 bounded refiner",
+    "run the same SAM-mask and held-out split contracts",
+    "schedule only after the SEA-RAFT U2 comparison is frozen"
+  ],
+  "shared_method_contracts": {
+    "uncertainty": "one learned log-variance map per recurrent flow prediction",
+    "repair": "zero-initialized bounded one-pixel refinement head",
+    "u2": "alternating observer and flow epochs",
+    "sam": "uncertainty-guided regional homography smoothness",
+    "action_bank": "native first; 9A competition remains a separate later stage"
+  }
+}

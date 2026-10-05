@@ -9,6 +9,7 @@ spatial augmentation preserves pixel/vector coordinates.
 from __future__ import annotations
 
 from dataclasses import replace
+import hashlib
 import json
 from pathlib import Path
 import struct
@@ -37,6 +38,9 @@ from stablebridge.physical_repair.u2flow_training_data import (
     U2FlowTrainingRowV1,
     U2FlowTrainingStageV1,
     build_u2flow_training_manifest_v1,
+)
+from stablebridge.physical_repair.sam_semantic_smoothness import (
+    SAM_FULL_SEGMENTATION_SCHEMA_V1,
 )
 
 
@@ -112,6 +116,28 @@ def _read_binary_mask(path: Path, expected_hw: tuple[int, int]) -> np.ndarray:
     return result != 0
 
 
+def _sha256_path(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(4 * 1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _read_segment_ids(path: Path, expected_hw: tuple[int, int]) -> np.ndarray:
+    with Image.open(path) as image:
+        result = np.asarray(image).copy()
+    if result.ndim == 3:
+        if result.shape[2] != 1:
+            raise ValueError(f"SAM full segmentation must be single-channel: {path}")
+        result = result[..., 0]
+    if result.shape != expected_hw:
+        raise ValueError(f"SAM full-segmentation geometry drift: {path}")
+    if result.dtype.kind not in {"u", "i"} or int(result.min()) < 0:
+        raise ValueError(f"SAM full segmentation must contain nonnegative ids: {path}")
+    return result.astype(np.int64, copy=False)
+
+
 def _chw_float(image: np.ndarray) -> torch.Tensor:
     return torch.from_numpy(np.ascontiguousarray(image.transpose(2, 0, 1))).float().div_(255.0)
 
@@ -147,6 +173,8 @@ class SintelU0UncertaintyDatasetV1(Dataset[dict[str, object]]):
         allow_fit_ground_truth: bool = False,
         allow_spatial_augmentation: bool = False,
         action_id: str = OPTICAL_NATIVE_ACTION_ID,
+        sam_full_segmentation_root: str | Path | None = None,
+        sam_checkpoint_sha256: str | None = None,
     ) -> None:
         if not isinstance(manifest, U2FlowTrainingManifestV1):
             raise ValueError("manifest must be a typed U2Flow training manifest")
@@ -188,6 +216,46 @@ class SintelU0UncertaintyDatasetV1(Dataset[dict[str, object]]):
         self.allow_fit_ground_truth = allow_fit_ground_truth
         self.allow_spatial_augmentation = allow_spatial_augmentation
         self.rows = rows
+        if (sam_full_segmentation_root is None) != (sam_checkpoint_sha256 is None):
+            raise ValueError(
+                "SAM full-segmentation root and checkpoint digest must be configured together"
+            )
+        self.sam_full_segmentation_root = (
+            None
+            if sam_full_segmentation_root is None
+            else Path(sam_full_segmentation_root).expanduser().resolve()
+        )
+        self.sam_manifest: Mapping[str, object] | None = None
+        self.sam_records: Mapping[str, object] = {}
+        if self.sam_full_segmentation_root is not None:
+            manifest_path = self.sam_full_segmentation_root / "manifest.json"
+            if not manifest_path.is_file():
+                raise FileNotFoundError(manifest_path)
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            if not isinstance(manifest, Mapping):
+                raise ValueError("SAM full-segmentation manifest must be an object")
+            if (
+                manifest.get("schema") != SAM_FULL_SEGMENTATION_SCHEMA_V1
+                or manifest.get("complete") is not True
+                or manifest.get("sam_checkpoint_sha256") != sam_checkpoint_sha256
+                or Path(str(manifest.get("source_root", ""))).resolve()
+                != Path(self.manifest.root).resolve()
+            ):
+                raise ValueError("SAM full-segmentation manifest lineage drift")
+            records = manifest.get("records")
+            if not isinstance(records, Mapping):
+                raise ValueError("SAM full-segmentation manifest has no records")
+            needed = {
+                str(Path(row.base_inputs[0].path).resolve().relative_to(Path(self.manifest.root).resolve()))
+                for row in rows
+            }
+            missing = sorted(needed - set(str(key) for key in records))
+            if missing:
+                raise ValueError(
+                    f"SAM full-segmentation manifest misses {len(missing)} role frames"
+                )
+            self.sam_manifest = manifest
+            self.sam_records = records
         self.epoch = 0
         self.action_id = OPTICAL_NATIVE_ACTION_ID
         self.set_action_id(action_id)
@@ -217,11 +285,35 @@ class SintelU0UncertaintyDatasetV1(Dataset[dict[str, object]]):
             root / "training" / "occlusions" / row.scene_id / f"{stem}.png",
         )
 
+    def _sam_segment_ids(
+        self, row: U2FlowTrainingRowV1, expected_hw: tuple[int, int],
+    ) -> np.ndarray | None:
+        if self.sam_full_segmentation_root is None:
+            return None
+        source = Path(row.base_inputs[0].path).resolve()
+        relative = source.relative_to(Path(self.manifest.root).resolve())
+        record = self.sam_records.get(str(relative))
+        if not isinstance(record, Mapping):
+            raise ValueError(f"SAM manifest record is invalid: {relative}")
+        target = self.sam_full_segmentation_root / relative
+        if not target.is_file():
+            raise FileNotFoundError(target)
+        expected_sha = record.get("sha256")
+        if not isinstance(expected_sha, str) or _sha256_path(target) != expected_sha:
+            raise ValueError(f"SAM full-segmentation digest drift: {target}")
+        return _read_segment_ids(target, expected_hw)
+
     def __getitem__(self, index: int) -> dict[str, object]:
         row = self.rows[index]
         expected_hw = (row.base_inputs[0].height, row.base_inputs[0].width)
         first = _read_rgb(row.base_inputs[0].path, expected_hw)
         second = _read_rgb(row.base_inputs[1].path, expected_hw)
+        full_sam_segment_ids = self._sam_segment_ids(row, expected_hw)
+        fusion_previous = None
+        if row.fusion_context_enabled:
+            if row.fusion_context is None:
+                raise RuntimeError("enabled fusion row has no previous-frame identity")
+            fusion_previous = _read_rgb(row.fusion_context.path, expected_hw)
         if (
             self.role is U2FlowSceneRoleV1.VALIDATION
             and self.validation_appearance_probe
@@ -259,6 +351,26 @@ class SintelU0UncertaintyDatasetV1(Dataset[dict[str, object]]):
         height, width = spatial.crop_hw
         native_first = np.ascontiguousarray(first[top : top + height, left : left + width])
         native_second = np.ascontiguousarray(second[top : top + height, left : left + width])
+        sam_segment_ids = (
+            None
+            if full_sam_segment_ids is None
+            else np.ascontiguousarray(
+                full_sam_segment_ids[top : top + height, left : left + width]
+            )
+        )
+        fusion_frames = None
+        if fusion_previous is not None:
+            native_previous = np.ascontiguousarray(
+                fusion_previous[top : top + height, left : left + width]
+            )
+            # Fusion consumes native [previous, current, next] RGB.  It is kept
+            # separate from action-prepared pairs: the initial integration is a
+            # native-provider post-process, not an implicit action transform.
+            fusion_frames = torch.stack((
+                _chw_float(native_previous),
+                _chw_float(native_first),
+                _chw_float(native_second),
+            ))
         augmented = apply_u2flow_recipe_v1(
             first, second, recipe, profile=selected_profile
         )
@@ -317,7 +429,7 @@ class SintelU0UncertaintyDatasetV1(Dataset[dict[str, object]]):
         native_to_augmented = full_to_augmented @ np.linalg.inv(full_to_native)
         augmented_to_native = np.linalg.inv(native_to_augmented)
 
-        return {
+        result = {
             "row_id": row.row_id,
             "scene_id": row.scene_id,
             "group_id": row.group_id,
@@ -341,6 +453,11 @@ class SintelU0UncertaintyDatasetV1(Dataset[dict[str, object]]):
             "augmented_to_native": torch.from_numpy(augmented_to_native).float(),
             "swap_endpoints": spatial.swap_endpoints,
         }
+        if fusion_frames is not None:
+            result["fusion_frames"] = fusion_frames
+        if sam_segment_ids is not None:
+            result["sam_segment_ids"] = torch.from_numpy(sam_segment_ids[None]).long()
+        return result
 
 
 def collate_sintel_u0_samples_v1(
@@ -418,6 +535,8 @@ def build_sintel_u0_dataset_from_config_v1(
     allow_fit_ground_truth: bool = False,
     allow_spatial_augmentation: bool = False,
     action_id: str = OPTICAL_NATIVE_ACTION_ID,
+    sam_full_segmentation_root: str | Path | None = None,
+    sam_checkpoint_sha256: str | None = None,
 ) -> SintelU0UncertaintyDatasetV1:
     """Load the checked JSON config, inventory its RGB data, and bind one role."""
 
@@ -446,6 +565,8 @@ def build_sintel_u0_dataset_from_config_v1(
         allow_fit_ground_truth=allow_fit_ground_truth,
         allow_spatial_augmentation=allow_spatial_augmentation,
         action_id=action_id,
+        sam_full_segmentation_root=sam_full_segmentation_root,
+        sam_checkpoint_sha256=sam_checkpoint_sha256,
     )
 
 
@@ -477,6 +598,8 @@ def build_sintel_integrated_dataset_from_config_v2(
     role: U2FlowSceneRoleV1 | str,
     validation_appearance_probe: bool = True,
     action_id: str = OPTICAL_NATIVE_ACTION_ID,
+    sam_full_segmentation_root: str | Path | None = None,
+    sam_checkpoint_sha256: str | None = None,
 ) -> SintelU0UncertaintyDatasetV1:
     """Build labelled native views plus full spatial consistency metadata.
 
@@ -492,6 +615,8 @@ def build_sintel_integrated_dataset_from_config_v2(
         allow_fit_ground_truth=True,
         allow_spatial_augmentation=True,
         action_id=action_id,
+        sam_full_segmentation_root=sam_full_segmentation_root,
+        sam_checkpoint_sha256=sam_checkpoint_sha256,
     )
 
 

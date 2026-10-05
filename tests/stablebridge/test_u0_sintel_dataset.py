@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from pathlib import Path
+import hashlib
+import json
 import shutil
 import struct
 import uuid
@@ -28,6 +30,9 @@ from stablebridge.physical_repair.u2flow_augmentations import (
 )
 from stablebridge.physical_repair.u2flow_training_data import (
     build_u2flow_training_manifest_v1,
+)
+from stablebridge.physical_repair.sam_semantic_smoothness import (
+    SAM_FULL_SEGMENTATION_SCHEMA_V1,
 )
 
 
@@ -173,6 +178,47 @@ def test_fit_rejects_ground_truth_request(sintel_root):
         )
 
 
+def test_opt_in_fusion_context_materializes_previous_current_next_triplet(sintel_root):
+    _populate(sintel_root)
+    for render_pass in ("clean", "final"):
+        for scene in sum(_splits().values(), []):
+            second_path = (
+                sintel_root / "training" / render_pass / scene / "frame_0002.png"
+            )
+            with Image.open(second_path) as image:
+                third = (np.asarray(image, dtype=np.uint8).astype(np.uint16) + 7) % 255
+            Image.fromarray(third.astype(np.uint8), mode="RGB").save(
+                second_path.with_name("frame_0003.png")
+            )
+    profile = _profile()
+    manifest = build_u2flow_training_manifest_v1({
+        "manifest_id": "synthetic-u0-sintel-fusion-v1",
+        "stage": "finetune",
+        "root": str(sintel_root),
+        "base_frame_count": 2,
+        "fusion_context_frames": 3,
+        "fusion_context_enabled": True,
+        "splits": _splits(),
+        "crop_recipe": {"height": 6, "width": 8},
+        "augmentation_recipe": {
+            "master_seed": 17,
+            "profile": profile.as_dict(),
+            "profile_hash": profile.profile_hash,
+        },
+    })
+    dataset = SintelU0UncertaintyDatasetV1(
+        manifest, role="fit", fit_profile=profile, master_seed=17,
+    )
+    boundary = dataset[0]
+    assert boundary["fusion_frames"].shape == (3, 3, 6, 8)
+    assert torch.equal(boundary["fusion_frames"][0], boundary["fusion_frames"][1])
+    assert torch.equal(boundary["fusion_frames"][1:], boundary["native_frames"])
+
+    interior = dataset[1]
+    assert not torch.equal(interior["fusion_frames"][0], interior["fusion_frames"][1])
+    assert torch.equal(interior["fusion_frames"][1:], interior["native_frames"])
+
+
 def test_u1_explicitly_opts_into_fit_ground_truth(sintel_root):
     _populate(sintel_root)
     dataset = SintelU0UncertaintyDatasetV1(
@@ -218,6 +264,53 @@ def test_integrated_dataset_emits_exact_spatial_transport_metadata(sintel_root, 
     assert not sample["augmentation_valid"].all()
     # Native GT support is independent of the augmented affine support.
     assert int(sample["ground_truth_valid"].sum()) == 47
+
+
+def test_integrated_dataset_loads_hash_bound_sam_full_segmentation(
+    sintel_root, tmp_path,
+):
+    _populate(sintel_root)
+    manifest = _manifest(sintel_root)
+    sam_root = tmp_path / "sam-fullseg"
+    records = {}
+    for row in manifest.rows:
+        if row.split_role.value != "fit":
+            continue
+        source = Path(row.base_inputs[0].path).resolve()
+        relative = source.relative_to(sintel_root.resolve())
+        labels = np.zeros((8, 12), dtype=np.uint16)
+        labels[1:7, 2:10] = 1
+        target = sam_root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        Image.fromarray(labels).save(target)
+        records[str(relative)] = {
+            "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+        }
+    checkpoint_sha = "a" * 64
+    (sam_root / "manifest.json").write_text(json.dumps({
+        "schema": SAM_FULL_SEGMENTATION_SCHEMA_V1,
+        "complete": True,
+        "source_root": str(sintel_root.resolve()),
+        "sam_checkpoint_sha256": checkpoint_sha,
+        "records": records,
+    }), encoding="utf-8")
+    dataset = SintelU0UncertaintyDatasetV1(
+        manifest,
+        role="fit",
+        fit_profile=_profile(),
+        master_seed=17,
+        sam_full_segmentation_root=sam_root,
+        sam_checkpoint_sha256=checkpoint_sha,
+    )
+    sample = dataset[0]
+    assert sample["sam_segment_ids"].shape == (1, 6, 8)
+    assert sample["sam_segment_ids"].dtype is torch.int64
+    assert int(sample["sam_segment_ids"].max()) == 1
+
+    target = sam_root / next(iter(records))
+    target.write_bytes(b"corrupt")
+    with pytest.raises(ValueError, match="digest drift"):
+        dataset[0]
 
 
 def test_recurrent_u0_keeps_spatial_views_but_does_not_open_fit_truth(

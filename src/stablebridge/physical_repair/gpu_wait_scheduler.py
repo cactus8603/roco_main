@@ -36,6 +36,13 @@ SCHEDULER_SCHEMA_V1 = "stablebridge-gpu-wait-scheduler/v1"
 _NVIDIA_QUERY = (
     "index,uuid,name,memory.total,memory.used,memory.free,utilization.gpu"
 )
+_RETRYABLE_RESOURCE_FAILURES = (
+    ("cublas_status_alloc_failed", "CUBLAS_STATUS_ALLOC_FAILED"),
+    ("cudnn_status_alloc_failed", "CUDNN_STATUS_ALLOC_FAILED"),
+    ("torch.outofmemoryerror", "TORCH_CUDA_OUT_OF_MEMORY"),
+    ("cuda out of memory", "CUDA_OUT_OF_MEMORY"),
+    ("cuda error: out of memory", "CUDA_OUT_OF_MEMORY"),
+)
 
 
 def _utc_now() -> str:
@@ -53,6 +60,28 @@ def _atomic_json(path: Path, value: Mapping[str, Any]) -> None:
         os.replace(temporary, path)
     finally:
         temporary.unlink(missing_ok=True)
+
+
+def classify_retryable_resource_failure(text: str) -> str | None:
+    """Return a stable reason for explicit CUDA allocation failures only."""
+
+    lowered = text.lower()
+    for needle, reason in _RETRYABLE_RESOURCE_FAILURES:
+        if needle in lowered:
+            return reason
+    return None
+
+
+def _read_text_suffix(path: Path, offset: int) -> str:
+    """Read log bytes written after ``offset``, tolerating rotation/truncation."""
+
+    if not path.is_file():
+        return ""
+    size = path.stat().st_size
+    start = offset if 0 <= offset <= size else 0
+    with path.open("rb") as stream:
+        stream.seek(start)
+        return stream.read().decode("utf-8", errors="replace")
 
 
 @dataclass(frozen=True)
@@ -149,12 +178,15 @@ def choose_gpu(
 
 
 def build_child_environment(
-    base: Mapping[str, str], selected: GPUStatusV1,
+    base: Mapping[str, str], selected: GPUStatusV1, *, resource_retry_count: int = 0,
 ) -> dict[str, str]:
+    if isinstance(resource_retry_count, bool) or resource_retry_count < 0:
+        raise ValueError("resource retry count must be nonnegative")
     result = dict(base)
     result["CUDA_VISIBLE_DEVICES"] = str(selected.index)
     result["STABLEBRIDGE_PHYSICAL_GPU_UUID"] = selected.uuid
     result["STABLEBRIDGE_PHYSICAL_GPU_INDEX"] = str(selected.index)
+    result["STABLEBRIDGE_RESOURCE_RETRY_COUNT"] = str(resource_retry_count)
     result.setdefault("PYTHONUNBUFFERED", "1")
     return result
 
@@ -239,6 +271,7 @@ class SchedulerOptionsV1:
     poll_seconds: float = 30.0
     allowed_indices: frozenset[int] | None = None
     gpu_lock_dir: Path | None = None
+    max_resource_retries: int = 0
 
     def __post_init__(self) -> None:
         if self.minimum_free_mib <= 0:
@@ -251,6 +284,8 @@ class SchedulerOptionsV1:
             not self.allowed_indices or any(index < 0 for index in self.allowed_indices)
         ):
             raise ValueError("allowed GPU indices must be a non-empty non-negative set")
+        if not 0 <= self.max_resource_retries <= 10:
+            raise ValueError("maximum resource retries must lie in [0,10]")
 
     @property
     def resolved_gpu_lock_dir(self) -> Path:
@@ -299,6 +334,7 @@ class GPUWaitSchedulerV1:
             "minimum_free_mib": self.options.minimum_free_mib,
             "maximum_utilization_percent": self.options.maximum_utilization_percent,
             "poll_seconds": self.options.poll_seconds,
+            "max_resource_retries": self.options.max_resource_retries,
             "allowed_indices": (
                 None if self.options.allowed_indices is None
                 else sorted(self.options.allowed_indices)
@@ -336,6 +372,7 @@ class GPUWaitSchedulerV1:
             previous[signum] = signal.signal(signum, self._signal)
         try:
             self._write_status("waiting")
+            resource_retry_count = 0
             while self.stop_requested is None:
                 try:
                     snapshots = query_gpus()
@@ -376,24 +413,60 @@ class GPUWaitSchedulerV1:
                         gpu_lock.release()
                         self._sleep()
                         continue
-                    environment = build_child_environment(os.environ, verified)
-                    self._write_status("launching", selected_gpu=verified.as_dict())
+                    environment = build_child_environment(
+                        os.environ, verified,
+                        resource_retry_count=resource_retry_count,
+                    )
+                    stderr_path = self.options.state_dir / "watchdog.stderr.log"
+                    stderr_offset = (
+                        stderr_path.stat().st_size if stderr_path.is_file() else 0
+                    )
+                    self._write_status(
+                        "launching", selected_gpu=verified.as_dict(),
+                        resource_retry_count=resource_retry_count,
+                    )
                     self.child = subprocess.Popen(
                         list(self.command), env=environment, stdin=subprocess.DEVNULL,
                         text=True, start_new_session=False,
                     )
                     self._write_status(
                         "running", selected_gpu=verified.as_dict(), child_pid=self.child.pid,
+                        resource_retry_count=resource_retry_count,
                     )
                     while self.child.poll() is None:
                         time.sleep(1.0)
                     returncode = int(self.child.returncode)
+                    retry_reason = classify_retryable_resource_failure(
+                        _read_text_suffix(stderr_path, stderr_offset)
+                    )
+                    if (
+                        returncode != 0
+                        and self.stop_requested is None
+                        and retry_reason is not None
+                        and resource_retry_count < self.options.max_resource_retries
+                    ):
+                        resource_retry_count += 1
+                        self.child = None
+                        self._write_status(
+                            "waiting", reason="retryable_resource_failure",
+                            last_retry_reason=retry_reason,
+                            last_child_returncode=returncode,
+                            previous_gpu=verified.as_dict(),
+                            resource_retry_count=resource_retry_count,
+                        )
+                        # Do not hold the GPU reservation during backoff.  The
+                        # next pass re-runs both admission snapshots.
+                        gpu_lock.release()
+                        self._sleep()
+                        continue
                     state = "completed" if returncode == 0 else (
                         "stopped" if self.stop_requested is not None else "failed"
                     )
                     self._write_status(
                         state, selected_gpu=verified.as_dict(), child_pid=self.child.pid,
                         child_returncode=returncode,
+                        resource_retry_count=resource_retry_count,
+                        retryable_resource_failure=retry_reason,
                     )
                     return returncode
                 except (OSError, RuntimeError, ValueError, subprocess.TimeoutExpired) as error:
@@ -424,6 +497,7 @@ def build_watchdog_argv(
         "--minimum-free-mib", str(options.minimum_free_mib),
         "--maximum-utilization-percent", str(options.maximum_utilization_percent),
         "--poll-seconds", str(options.poll_seconds),
+        "--max-resource-retries", str(options.max_resource_retries),
     ]
     if options.gpu_lock_dir is not None:
         argv.extend(["--gpu-lock-dir", str(options.gpu_lock_dir.resolve())])
@@ -579,6 +653,7 @@ def _options(args: argparse.Namespace) -> SchedulerOptionsV1:
         minimum_free_mib=args.minimum_free_mib,
         maximum_utilization_percent=args.maximum_utilization_percent,
         poll_seconds=args.poll_seconds,
+        max_resource_retries=args.max_resource_retries,
         allowed_indices=_allowed_indices(args.allowed_indices),
         gpu_lock_dir=(
             None if args.gpu_lock_dir is None
@@ -599,6 +674,10 @@ def _add_common(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--minimum-free-mib", type=int, default=16_000)
     parser.add_argument("--maximum-utilization-percent", type=int, default=10)
     parser.add_argument("--poll-seconds", type=float, default=30.0)
+    parser.add_argument(
+        "--max-resource-retries", type=int, default=0,
+        help="retry only explicit CUDA allocation failures this many times",
+    )
     parser.add_argument("--allowed-indices", help="comma-separated physical GPU indices")
     parser.add_argument(
         "--gpu-lock-dir", type=Path,
@@ -667,6 +746,7 @@ __all__ = [
     "SchedulerOptionsV1",
     "build_child_environment",
     "build_watchdog_argv",
+    "classify_retryable_resource_failure",
     "choose_gpu",
     "main",
     "parse_gpu_csv",

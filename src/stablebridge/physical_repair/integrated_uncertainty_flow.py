@@ -8,6 +8,7 @@ whose residual target cannot backpropagate into the flow branch.
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
 import math
@@ -27,6 +28,7 @@ class RecurrentUncertaintyVariantV2(str, Enum):
 
 class TrainableScopeV2(str, Enum):
     UNCERTAINTY_ONLY = "uncertainty_only"
+    REFINER_ONLY = "refiner_only"
     REFINEMENT_HEADS = "refinement_heads"
     ALL = "all"
 
@@ -47,6 +49,7 @@ class UncertaintyAwareSeaRaftFlowHeadV2(nn.Module):
         *,
         hidden_channels: int,
         refinement_channels: int = 64,
+        maximum_update_px: float = 1.0,
         variant: RecurrentUncertaintyVariantV2 | str = (
             RecurrentUncertaintyVariantV2.REFINEMENT_WITH_UNCERTAINTY
         ),
@@ -56,9 +59,14 @@ class UncertaintyAwareSeaRaftFlowHeadV2(nn.Module):
             raise TypeError("base_head must be a torch module")
         if hidden_channels <= 0 or refinement_channels <= 0:
             raise ValueError("head channel counts must be positive")
+        maximum_update_px = float(maximum_update_px)
+        if not math.isfinite(maximum_update_px) or maximum_update_px <= 0.0:
+            raise ValueError("maximum flow update must be finite and positive")
         self.base_head = base_head
         self.hidden_channels = int(hidden_channels)
         self.variant = RecurrentUncertaintyVariantV2(variant)
+        self.maximum_update_px = maximum_update_px
+        self.refinement_enabled = True
         self.uncertainty_head = nn.Sequential(
             nn.Conv2d(self.hidden_channels, self.hidden_channels, 3, padding=1),
             nn.LeakyReLU(0.1, inplace=False),
@@ -92,7 +100,10 @@ class UncertaintyAwareSeaRaftFlowHeadV2(nn.Module):
         alpha = self.uncertainty_head(hidden)
         if self._capture:
             self._captured_log_variances.append(alpha)
-        if self.variant is RecurrentUncertaintyVariantV2.HEAD_ONLY:
+        if (
+            self.variant is RecurrentUncertaintyVariantV2.HEAD_ONLY
+            or not self.refinement_enabled
+        ):
             return base
         flow_feature = base[:, :2]
         if self.variant is RecurrentUncertaintyVariantV2.REFINEMENT_WITH_UNCERTAINTY:
@@ -102,9 +113,14 @@ class UncertaintyAwareSeaRaftFlowHeadV2(nn.Module):
             detached_alpha = torch.zeros_like(alpha)
             reliability = torch.ones_like(alpha)
         weighted = flow_feature * reliability
-        correction = self.refinement_head(torch.cat(
+        raw_correction = self.refinement_head(torch.cat(
             (flow_feature, weighted, detached_alpha), dim=1,
         ))
+        magnitude = torch.linalg.vector_norm(raw_correction, dim=1, keepdim=True)
+        scale = torch.clamp(
+            self.maximum_update_px / magnitude.clamp_min(1e-12), max=1.0,
+        )
+        correction = raw_correction * scale
         return torch.cat((flow_feature + correction, base[:, 2:]), dim=1)
 
 
@@ -118,6 +134,7 @@ class UncertaintyAwareSeaRaftV2(nn.Module):
         variant: RecurrentUncertaintyVariantV2 | str,
         trainable_scope: TrainableScopeV2 | str = TrainableScopeV2.ALL,
         refinement_channels: int = 64,
+        maximum_update_px: float = 1.0,
     ) -> None:
         super().__init__()
         if not isinstance(backbone, nn.Module) or not hasattr(backbone, "flow_head"):
@@ -133,6 +150,7 @@ class UncertaintyAwareSeaRaftV2(nn.Module):
             original_head,
             hidden_channels=hidden_channels,
             refinement_channels=refinement_channels,
+            maximum_update_px=maximum_update_px,
             variant=variant,
         )
         backbone.flow_head = self.recurrent_head
@@ -143,9 +161,15 @@ class UncertaintyAwareSeaRaftV2(nn.Module):
 
     def _apply_trainable_scope(self) -> None:
         self.requires_grad_(self.trainable_scope is TrainableScopeV2.ALL)
-        if self.trainable_scope is not TrainableScopeV2.ALL:
+        if self.trainable_scope in {
+            TrainableScopeV2.UNCERTAINTY_ONLY,
+            TrainableScopeV2.REFINEMENT_HEADS,
+        }:
             self.recurrent_head.uncertainty_head.requires_grad_(True)
-        if self.trainable_scope is TrainableScopeV2.REFINEMENT_HEADS:
+        if self.trainable_scope in {
+            TrainableScopeV2.REFINER_ONLY,
+            TrainableScopeV2.REFINEMENT_HEADS,
+        }:
             self.recurrent_head.refinement_head.requires_grad_(
                 self.variant is not RecurrentUncertaintyVariantV2.HEAD_ONLY
             )
@@ -155,6 +179,17 @@ class UncertaintyAwareSeaRaftV2(nn.Module):
         # heads-only optimizer.
         if self.trainable_scope is not TrainableScopeV2.ALL:
             self.recurrent_head.base_head.requires_grad_(False)
+
+    @contextmanager
+    def refinement_disabled(self):
+        """Temporarily expose the frozen base provider for U1 harm checks."""
+
+        previous = self.recurrent_head.refinement_enabled
+        self.recurrent_head.refinement_enabled = False
+        try:
+            yield
+        finally:
+            self.recurrent_head.refinement_enabled = previous
 
     def train(self, mode: bool = True):
         super().train(mode)
@@ -224,6 +259,7 @@ def make_pinned_uncertainty_aware_sea_raft_v2(
     variant: str,
     trainable_scope: str = "all",
     refinement_channels: int = 64,
+    maximum_update_px: float = 1.0,
     vendor_root: str | None = None,
     config_path: str | None = None,
     checkpoint: str | None = None,
@@ -243,6 +279,7 @@ def make_pinned_uncertainty_aware_sea_raft_v2(
         variant=variant,
         trainable_scope=trainable_scope,
         refinement_channels=refinement_channels,
+        maximum_update_px=maximum_update_px,
     ).to(torch.device(device))
 
 

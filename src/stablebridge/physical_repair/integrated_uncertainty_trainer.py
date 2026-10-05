@@ -51,39 +51,6 @@ from .sam_semantic_smoothness import (
 
 
 INTEGRATED_TRAINER_SCHEMA_V2 = "stablebridge-integrated-uncertainty-trainer/v2"
-SEA_RAFT_INPUT_CONTRACT_V1 = (
-    "dataset_rgb_float_0_1_to_matcher_rgb_float_0_255_once"
-)
-FLOW_OUTPUT_CONTRACT_V1 = "dense_xy_displacement_in_output_pixels"
-
-
-def unit_rgb_to_sea_raft_input_v1(value: torch.Tensor) -> torch.Tensor:
-    """Convert the dataset's unit RGB contract to SEA-RAFT's 0--255 contract.
-
-    Keeping this conversion at the provider boundary lets augmentations operate
-    in their documented unit interval while preventing either a missing or a
-    duplicated factor of 255 from silently changing matcher semantics.
-    """
-    if not isinstance(value, torch.Tensor) or not value.is_floating_point():
-        raise TypeError("dataset RGB must be a floating tensor")
-    if not bool(torch.isfinite(value).all()):
-        raise ValueError("dataset RGB must be finite")
-    minimum, maximum = torch.aminmax(value.detach())
-    if float(minimum) < -1e-6 or float(maximum) > 1.0 + 1e-6:
-        raise ValueError("dataset RGB must remain in the [0,1] interval")
-    return value.float() * 255.0
-
-
-def validate_sea_raft_input_v1(value: torch.Tensor) -> torch.Tensor:
-    """Fail closed unless an evaluator supplies finite RGB in [0,255]."""
-    if not isinstance(value, torch.Tensor) or not value.is_floating_point():
-        raise TypeError("SEA-RAFT RGB input must be a floating tensor")
-    if not bool(torch.isfinite(value).all()):
-        raise ValueError("SEA-RAFT RGB input must be finite")
-    minimum, maximum = torch.aminmax(value.detach())
-    if float(minimum) < -1e-4 or float(maximum) > 255.0 + 1e-4:
-        raise ValueError("SEA-RAFT RGB input must remain in the [0,255] interval")
-    return value
 
 
 @dataclass(frozen=True)
@@ -297,7 +264,6 @@ class IntegratedTrainerConfigV2:
     refiner_loss: UncertaintyRefinerLossPolicyV1 | None = None
     uncertainty_initialization_checkpoint: Path | None = None
     refiner_initialization_checkpoint: Path | None = None
-    model_initialization_checkpoint: Path | None = None
     u2_schedule: AlternatingU2ScheduleV2 | None = None
     fusion: U2FlowBidirectionalFusionPolicyV1 | None = None
     sam_homography: SamHomographySmoothnessPolicyV1 = (
@@ -319,8 +285,7 @@ class IntegratedTrainerConfigV2:
         }
         optional = {
             "action_bank", "uncertainty_initialization_checkpoint",
-            "refiner_initialization_checkpoint", "model_initialization_checkpoint",
-            "metric_spatial_stride",
+            "refiner_initialization_checkpoint", "metric_spatial_stride",
             "refiner_loss", "u2_schedule", "fusion",
             "sam_homography", "cuda_memory_reservation",
         }
@@ -355,31 +320,8 @@ class IntegratedTrainerConfigV2:
                 raise ValueError("U1 refiner training requires a completed U0 initialization")
         u2_schedule = AlternatingU2ScheduleV2.from_mapping(value.get("u2_schedule"))
         refiner_checkpoint_value = value.get("refiner_initialization_checkpoint")
-        model_checkpoint_value = value.get("model_initialization_checkpoint")
-        partial_initialization = any(
-            value.get(key) is not None
-            for key in (
-                "uncertainty_initialization_checkpoint",
-                "refiner_initialization_checkpoint",
-            )
-        )
-        if model_checkpoint_value is not None and partial_initialization:
-            raise ValueError(
-                "full-model initialization cannot be combined with U0/U1 partial initialization"
-            )
-        if u2_schedule is None and refiner_checkpoint_value is not None:
-            raise ValueError(
-                "U1 refiner initialization requires an alternating U2 schedule"
-            )
-        if (
-            u2_schedule is not None
-            and model_checkpoint_value is None
-            and refiner_checkpoint_value is None
-        ):
-            raise ValueError(
-                "alternating U2 and U1 refiner initialization must be configured "
-                "together unless a full-model initialization is provided"
-            )
+        if (u2_schedule is None) != (refiner_checkpoint_value is None):
+            raise ValueError("alternating U2 and U1 refiner initialization must be configured together")
         if u2_schedule is not None:
             if scope is not TrainableScopeV2.ALL:
                 raise ValueError("alternating U2 requires all parameters in its optimizer")
@@ -387,13 +329,8 @@ class IntegratedTrainerConfigV2:
                 raise ValueError("head-only model cannot run alternating U2")
             if refiner_loss is not None:
                 raise ValueError("U2 cannot use the frozen-U0 U1 objective")
-            if (
-                model_checkpoint_value is None
-                and value.get("uncertainty_initialization_checkpoint") is None
-            ):
-                raise ValueError(
-                    "alternating U2 requires a completed U0 or full-model initialization"
-                )
+            if value.get("uncertainty_initialization_checkpoint") is None:
+                raise ValueError("alternating U2 requires a completed U0 initialization")
         iters = value["iters"]
         if isinstance(iters, bool) or not isinstance(iters, int) or iters < 1:
             raise ValueError("iters must be a positive integer")
@@ -446,11 +383,6 @@ class IntegratedTrainerConfigV2:
                 if refiner_checkpoint_value is None
                 else Path(str(refiner_checkpoint_value)).expanduser().resolve()
             ),
-            model_initialization_checkpoint=(
-                None
-                if model_checkpoint_value is None
-                else Path(str(model_checkpoint_value)).expanduser().resolve()
-            ),
             u2_schedule=u2_schedule,
             fusion=fusion,
             sam_homography=sam_homography,
@@ -490,10 +422,6 @@ class IntegratedTrainerConfigV2:
         if self.refiner_initialization_checkpoint is not None:
             result["refiner_initialization_checkpoint"] = str(
                 self.refiner_initialization_checkpoint
-            )
-        if self.model_initialization_checkpoint is not None:
-            result["model_initialization_checkpoint"] = str(
-                self.model_initialization_checkpoint
             )
         if self.u2_schedule is not None:
             result["u2_schedule"] = asdict(self.u2_schedule)
@@ -596,13 +524,8 @@ class IntegratedUncertaintyTrainerV2:
         self.model = _factory(config.model, device=str(self.device)).to(self.device)
         if self.cuda_memory_guard.active:
             self.cuda_memory_report = self.cuda_memory_guard.refill()
-        self.model_initialization_lineage = self._initialize_full_model()
-        if self.model_initialization_lineage is None:
-            self.initialization_lineage = self._initialize_uncertainty_head()
-            self.refiner_initialization_lineage = self._initialize_refiner_head()
-        else:
-            self.initialization_lineage = None
-            self.refiner_initialization_lineage = None
+        self.initialization_lineage = self._initialize_uncertainty_head()
+        self.refiner_initialization_lineage = self._initialize_refiner_head()
         trainable = [parameter for parameter in self.model.parameters() if parameter.requires_grad]
         if not trainable:
             raise ValueError("integrated model has no trainable parameters")
@@ -623,64 +546,10 @@ class IntegratedUncertaintyTrainerV2:
         )
         self.best_validation_score = float("inf")
         self.best_validation_epe = float("inf")
-        self._rgb_input_contract_validated = False
         self.run_dir = config.run_dir
         self.metrics_path = self.run_dir / "metrics.jsonl"
         self.latest_path = self.run_dir / "latest.pt"
         self.best_path = self.run_dir / "best.pt"
-
-    def _initialize_full_model(self) -> dict[str, Any] | None:
-        """Warm-start a new stage without importing optimizer or epoch state.
-
-        This is deliberately separate from ``resume``: a resumed run must have
-        an identical config digest, while a new action-bank stage has a new
-        config and only inherits the trained model parameters.
-        """
-        path = self.config.model_initialization_checkpoint
-        if path is None:
-            return None
-        if not path.is_file():
-            raise FileNotFoundError(path)
-        payload = torch.load(path, map_location="cpu", weights_only=False)
-        if payload.get("schema") != INTEGRATED_TRAINER_SCHEMA_V2:
-            raise ValueError("model initialization must be an integrated v2 checkpoint")
-        source_config = payload.get("config")
-        if not isinstance(source_config, Mapping):
-            raise ValueError("model initialization checkpoint has no source config")
-        if payload.get("config_digest") != _digest(source_config):
-            raise ValueError("model initialization config digest drift")
-        if source_config.get("model") != self.config.serializable().get("model"):
-            raise ValueError("model initialization architecture/config drift")
-        if int(source_config.get("iters", -1)) != self.config.iters:
-            raise ValueError("model initialization recurrent iteration count drift")
-        metrics_path = path.parent / "metrics.jsonl"
-        if not metrics_path.is_file() or not any(
-            json.loads(line).get("event") == "training_completed"
-            for line in metrics_path.read_text(encoding="utf-8").splitlines()
-            if line.strip()
-        ):
-            raise ValueError("model initialization source training is incomplete")
-        source_state = payload.get("model")
-        if not isinstance(source_state, Mapping):
-            raise ValueError("model initialization state is invalid")
-        self.model.load_state_dict(source_state, strict=True)
-        return {
-            "checkpoint": str(path),
-            "checkpoint_sha256": _sha256_file(path),
-            "source_config_digest": str(payload["config_digest"]),
-            "source_best_validation_score": payload.get("best_validation_score"),
-            "source_best_validation_epe": payload.get("best_validation_epe"),
-            "source_action_bank_lineage": payload.get("action_bank_lineage"),
-            "source_model_initialization_lineage": payload.get(
-                "model_initialization_lineage"
-            ),
-            "source_uncertainty_initialization_lineage": payload.get(
-                "uncertainty_initialization_lineage"
-            ),
-            "source_refiner_initialization_lineage": payload.get(
-                "refiner_initialization_lineage"
-            ),
-        }
 
     def _initialize_uncertainty_head(self) -> dict[str, Any] | None:
         path = self.config.uncertainty_initialization_checkpoint
@@ -984,15 +853,8 @@ class IntegratedUncertaintyTrainerV2:
         phase: str | None = None,
     ):
         _action_id, iters = self._batch_action(batch)
-        if not self._rgb_input_contract_validated:
-            native = unit_rgb_to_sea_raft_input_v1(batch["native_frames"])
-            augmented = unit_rgb_to_sea_raft_input_v1(batch["augmented_frames"])
-            self._rgb_input_contract_validated = True
-        else:
-            # Dataset/action materializers are independently range-tested.  Do
-            # not introduce a CUDA synchronization on every training batch.
-            native = batch["native_frames"].float() * 255.0
-            augmented = batch["augmented_frames"].float() * 255.0
+        native = batch["native_frames"].float() * 255.0
+        augmented = batch["augmented_frames"].float() * 255.0
         if self.config.refiner_loss is not None:
             disable_refinement = getattr(self.model, "refinement_disabled", None)
             if not callable(disable_refinement):
@@ -1136,7 +998,6 @@ class IntegratedUncertaintyTrainerV2:
             "config": self.config.serializable(),
             "config_digest": self.config.digest,
             "action_bank_lineage": asdict(self.config.action_bank),
-            "model_initialization_lineage": self.model_initialization_lineage,
             "uncertainty_initialization_lineage": self.initialization_lineage,
             "refiner_initialization_lineage": self.refiner_initialization_lineage,
             "selection_metric": self.selection_metric,
@@ -1171,8 +1032,6 @@ class IntegratedUncertaintyTrainerV2:
             raise ValueError("integrated checkpoint config/schema mismatch")
         if payload.get("action_bank_lineage") != asdict(self.config.action_bank):
             raise ValueError("integrated checkpoint action-bank lineage mismatch")
-        if payload.get("model_initialization_lineage") != self.model_initialization_lineage:
-            raise ValueError("integrated checkpoint model initialization drift")
         if payload.get("uncertainty_initialization_lineage") != self.initialization_lineage:
             raise ValueError("integrated checkpoint uncertainty initialization drift")
         if payload.get("refiner_initialization_lineage") != self.refiner_initialization_lineage:
@@ -1328,13 +1187,7 @@ class IntegratedUncertaintyTrainerV2:
                 json.dumps(self.config.serializable(), indent=2, sort_keys=True) + "\n",
                 encoding="utf-8",
             )
-        self._write({
-            "event": "training_started",
-            "utc": _utc_now(),
-            "config_digest": self.config.digest,
-            "matcher_input_contract": SEA_RAFT_INPUT_CONTRACT_V1,
-            "flow_output_contract": FLOW_OUTPUT_CONTRACT_V1,
-        })
+        self._write({"event": "training_started", "utc": _utc_now(), "config_digest": self.config.digest})
         if self.cuda_memory_guard.active:
             self._write({
                 "event": "cuda_memory_reserved", "utc": _utc_now(),

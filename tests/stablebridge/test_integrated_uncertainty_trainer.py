@@ -12,13 +12,9 @@ from torch import nn
 from torch.utils.data import Dataset
 
 from stablebridge.physical_repair.integrated_uncertainty_trainer import (
-    FLOW_OUTPUT_CONTRACT_V1,
     INTEGRATED_TRAINER_SCHEMA_V2,
-    SEA_RAFT_INPUT_CONTRACT_V1,
     IntegratedTrainerConfigV2,
     IntegratedUncertaintyTrainerV2,
-    unit_rgb_to_sea_raft_input_v1,
-    validate_sea_raft_input_v1,
 )
 from stablebridge.physical_repair.candidate_action_bank import (
     OPTICAL_FLOW_CAPACITY_BANK_HASH,
@@ -201,30 +197,11 @@ def test_integrated_trainer_runs_validates_and_resumes(tmp_path):
     validation = next(row for row in rows if row["event"] == "validation_epoch")
     assert set(("epe", "ause", "spearman", "severe_auroc", "calibration_mae")) <= set(validation)
     assert rows[-1]["event"] == "training_completed"
-    started = next(row for row in rows if row["event"] == "training_started")
-    assert started["matcher_input_contract"] == SEA_RAFT_INPUT_CONTRACT_V1
-    assert started["flow_output_contract"] == FLOW_OUTPUT_CONTRACT_V1
 
     resumed = IntegratedUncertaintyTrainerV2(config, device="cpu")
     resumed.resume(trainer.latest_path)
     assert resumed.epoch == 1
     assert resumed.global_step == trainer.global_step
-
-
-def test_rgb_scale_contract_converts_exactly_once_and_fails_closed():
-    unit = torch.tensor([0.0, 0.25, 0.5, 1.0], dtype=torch.float32)
-    matcher = unit_rgb_to_sea_raft_input_v1(unit)
-    assert torch.equal(
-        matcher,
-        torch.tensor([0.0, 63.75, 127.5, 255.0], dtype=torch.float32),
-    )
-    assert validate_sea_raft_input_v1(matcher) is matcher
-    with pytest.raises(ValueError, match=r"\[0,1\]"):
-        unit_rgb_to_sea_raft_input_v1(matcher)
-    with pytest.raises(ValueError, match=r"\[0,255\]"):
-        validate_sea_raft_input_v1(torch.tensor([256.0]))
-    with pytest.raises(ValueError, match="finite"):
-        unit_rgb_to_sea_raft_input_v1(torch.tensor([float("nan")]))
 
 
 def test_resume_loads_checkpoint_on_cpu_for_rng_contract(tmp_path, monkeypatch):
@@ -404,46 +381,6 @@ def test_u2_loads_completed_native_head_only_initialization(tmp_path):
         torch.equal(parameter, torch.full_like(parameter, 0.375))
         for parameter in target.model.recurrent_head.uncertainty_head.state_dict().values()
     )
-
-
-def test_new_stage_warm_starts_full_model_with_traced_lineage(tmp_path):
-    source = IntegratedUncertaintyTrainerV2(
-        _config(tmp_path / "source-full"), device="cpu",
-    )
-    assert source.train() == 0
-    payload = torch.load(source.best_path, map_location="cpu", weights_only=False)
-    for key in tuple(payload["model"]):
-        payload["model"][key] = torch.full_like(payload["model"][key], 0.375)
-    torch.save(payload, source.best_path)
-
-    target_value = _config(tmp_path / "target-full").serializable()
-    target_value["model_initialization_checkpoint"] = str(source.best_path)
-    target = IntegratedUncertaintyTrainerV2(
-        IntegratedTrainerConfigV2.from_mapping(target_value), device="cpu",
-    )
-    assert target.initialization_lineage is None
-    assert target.refiner_initialization_lineage is None
-    assert target.model_initialization_lineage is not None
-    assert target.model_initialization_lineage["checkpoint"] == str(source.best_path)
-    assert all(
-        torch.equal(parameter, torch.full_like(parameter, 0.375))
-        for parameter in target.model.state_dict().values()
-    )
-    target.save()
-    checkpoint = torch.load(target.latest_path, map_location="cpu", weights_only=False)
-    assert checkpoint["model_initialization_lineage"] == (
-        target.model_initialization_lineage
-    )
-    resumed = IntegratedUncertaintyTrainerV2(target.config, device="cpu")
-    resumed.resume(target.latest_path)
-
-
-def test_full_model_initialization_rejects_ambiguous_partial_sources(tmp_path):
-    value = _config(tmp_path / "ambiguous-initialization").serializable()
-    value["model_initialization_checkpoint"] = str(tmp_path / "full.pt")
-    value["uncertainty_initialization_checkpoint"] = str(tmp_path / "u0.pt")
-    with pytest.raises(ValueError, match="cannot be combined"):
-        IntegratedTrainerConfigV2.from_mapping(value)
 
 
 def test_u2_loads_matching_u1_and_alternates_disjoint_gradient_phases(tmp_path):

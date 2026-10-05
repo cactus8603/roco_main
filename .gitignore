@@ -45,17 +45,12 @@ tmp_trash
 /operations/
 /outputs/
 
-# Keep only the current architecture/reproducibility package from the large
-# research and documentation trees.
-/research/*
-!/research/action_bank_29_finalization_20261005/
-!/research/action_bank_29_finalization_20261005/**
-
+# Keep internal research material local. Only the concise, curated progress
+# summary is part of the public repository.
+/research/
 /docs/*
-!/docs/research/
-/docs/research/*
-!/docs/research/action_bank_selector_architecture_20261005/
-!/docs/research/action_bank_selector_architecture_20261005/**
+!/docs/training_progress/
+!/docs/training_progress/**
 
 # Draft paper and local progress logs are not part of the clean code snapshot.
 /paper/

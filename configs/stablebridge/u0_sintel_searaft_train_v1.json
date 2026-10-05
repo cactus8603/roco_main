@@ -1,0 +1,44 @@
+{
+  "schema": "stablebridge-u0-uncertainty-trainer/v1",
+  "run_dir": "/ssd1/cactus8603/roco_main/experiments/U0_sintel_searaft_v1/seed11",
+  "dataset": {
+    "factory": "stablebridge.physical_repair.u0_sintel_dataset:build_sintel_u0_dataset_from_config_v1",
+    "kwargs": {
+      "config_path": "/ssd1/cactus8603/roco_main/configs/stablebridge/u0_sintel_u2flow_data_v1.json"
+    },
+    "fit_split": "fit",
+    "validation_split": "validation",
+    "split_argument": "role",
+    "collate_fn": "stablebridge.physical_repair.u0_sintel_dataset:collate_sintel_u0_samples_v1"
+  },
+  "batch_preparer": {
+    "factory": "stablebridge.physical_repair.u0_uncertainty_trainer:make_sea_raft_consistency_preparer_v1",
+    "kwargs": {
+      "iters": 4,
+      "vendor_root": "/ssd7/cactus8603/roco_spring/optical-flow-track/vendor/SEA-RAFT",
+      "config_path": "/ssd7/cactus8603/roco_spring/optical-flow-track/vendor/SEA-RAFT/config/eval/spring-M.json",
+      "checkpoint": "/ssd7/cactus8603/roco_spring/optical-flow-track/checkpoints/sea-raft-spring-M/model.safetensors"
+    }
+  },
+  "model": {
+    "factory": "stablebridge.physical_repair.uncertainty_aware_flow:DecoupledUncertaintyHeadV1",
+    "kwargs": {
+      "feature_channels": 12,
+      "hidden_channels": 32
+    }
+  },
+  "training": {
+    "epochs": 20,
+    "batch_size": 8,
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "num_workers": 4,
+    "gradient_accumulation_steps": 1,
+    "checkpoint_every_steps": 50,
+    "validation_every_epochs": 1,
+    "amp": true,
+    "seed": 11,
+    "pin_memory": true,
+    "gradient_clip_norm": 1.0
+  }
+}

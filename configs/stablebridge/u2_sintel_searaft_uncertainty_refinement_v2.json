@@ -1,0 +1,49 @@
+{
+  "schema": "stablebridge-integrated-uncertainty-trainer/v2",
+  "run_dir": "/ssd1/cactus8603/roco_main/experiments/U2_sintel_searaft_uncertainty_refinement_v2/seed11",
+  "dataset": {
+    "factory": "stablebridge.physical_repair.u0_sintel_dataset:build_sintel_integrated_dataset_from_config_v2",
+    "kwargs": {
+      "config_path": "/ssd1/cactus8603/roco_main/configs/stablebridge/u0_sintel_u2flow_data_v1.json",
+      "validation_appearance_probe": true
+    },
+    "fit_split": "fit",
+    "validation_split": "validation",
+    "split_argument": "role",
+    "collate_fn": "stablebridge.physical_repair.u0_sintel_dataset:collate_sintel_u0_samples_v1"
+  },
+  "model": {
+    "factory": "stablebridge.physical_repair.integrated_uncertainty_flow:make_pinned_uncertainty_aware_sea_raft_v2",
+    "kwargs": {
+      "variant": "refinement_with_uncertainty",
+      "trainable_scope": "all",
+      "refinement_channels": 64,
+      "vendor_root": "/ssd7/cactus8603/roco_spring/optical-flow-track/vendor/SEA-RAFT",
+      "config_path": "/ssd7/cactus8603/roco_spring/optical-flow-track/vendor/SEA-RAFT/config/eval/spring-M.json",
+      "checkpoint": "/ssd7/cactus8603/roco_spring/optical-flow-track/checkpoints/sea-raft-spring-M/model.safetensors"
+    }
+  },
+  "loss": {
+    "task_weight": 1.0,
+    "augmentation_weight": 0.02,
+    "uncertainty_weight": 0.005,
+    "gamma": 0.8
+  },
+  "training": {
+    "epochs": 20,
+    "batch_size": 2,
+    "learning_rate": 0.000025,
+    "weight_decay": 0.000001,
+    "num_workers": 4,
+    "gradient_accumulation_steps": 2,
+    "checkpoint_every_steps": 100,
+    "validation_every_epochs": 1,
+    "amp": true,
+    "seed": 11,
+    "gradient_clip_norm": 1.0,
+    "pin_memory": true,
+    "augmentation_start_epoch": 0
+  },
+  "iters": 4,
+  "severe_error_threshold": 3.0
+}

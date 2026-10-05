@@ -48,6 +48,8 @@ native observation
 | `uncertainty_aware_flow.py` | U0 observer、typed uncertainty roles、bounded U1 refiner |
 | `uncertainty_training_contracts.py` | native-only U0 manifest、checkpoint 與 calibration receipts |
 | `uncertainty_refinement_training.py` | U1 task／harm／anchor／smoothness objective |
+| `integrated_uncertainty_flow.py` | recurrent hidden-state UE、detached flow feedback、affine flow transport、decoupled losses |
+| `integrated_uncertainty_trainer.py` | HEAD／DUMMY／U2-MAIN trainer、checkpoint 與 EPE/AUSE/CC validation |
 | `uncertainty_evaluation.py` | NLL、AURC/AUSE、AUROC、coverage 與 grouped bootstrap |
 | `multi_action_orchestrator.py` | opt-in ROOT_RETRY／COMPOSED_CHAIN state machine |
 | `root_retry_replay.py` | one-shot 與 ROOT_RETRY 的 outcome-only offline replay |
@@ -64,8 +66,9 @@ python -m pip install --upgrade pip
 python -m pip install -e ".[dev]"
 ```
 
-核心依賴列於 [`pyproject.toml`](pyproject.toml)。真實 CroCo／SEA-RAFT 執行仍需要各自的
-官方程式、權重與資料集；它們不包含在 repository 中。
+核心依賴列於 [`pyproject.toml`](pyproject.toml)。Optical-flow 主線使用 pinned
+**SEA-RAFT Spring-M**；CroCo 只屬於 stereo 路徑，不是 U0 flow uncertainty 的 matcher。
+真實執行仍需要外部官方程式、權重與資料集；它們不包含在 repository 中。
 
 ## 測試
 
@@ -73,11 +76,15 @@ python -m pip install -e ".[dev]"
 PYTHONDONTWRITEBYTECODE=1 python -m pytest -q -p no:cacheprovider tests/stablebridge
 ```
 
-目前整理版本的完整 StableBridge regression 為：
+目前 Python 3.12 完整 StableBridge regression 為：
 
 ```text
-1187 passed, 19 subtests passed
+1263 passed, 19 subtests passed
 ```
+
+本輪 recurrent uncertainty、spatial flow transport、U0/U1 相依測試在 SEA-RAFT Python 3.10
+環境另為 `55 passed`；實際 Spring-M 權重亦已完成小尺寸及正式 384×832 train-batch
+forward/backward smoke test。
 
 測試通過表示 contracts、state transitions、receipt binding 與數學工具符合目前規格，
 不等同於下游 correspondence 效益已通過 fresh scientific validation。
@@ -112,12 +119,13 @@ U²Flow pipeline 另需 Raw、2012/2015 multi-view 與 SAM masks。
 - 三幀只保留給未來 bidirectional fusion，`fusion_context_enabled=false`，不改變目前二幀
   observer 的訓練語意；啟用時採 `[previous,current,next]`，scene 起點重複第一幀。
 - `sample_u2flow_role_recipe_v1` 強制 fit 使用由 `(master seed, epoch, row id)` 派生的 random
-  native crop；held-out roles 忽略 epoch，固定使用 identity appearance＋center crop。U²Flow 公開
-  程式是 384×832 random crop、論文文字是 448×1024；目前 CroCo flow checkpoint 固定為
-  320×384，因此採 320×384 且把差異寫入 hash-bound recipe，沒有假裝完全重現原論文。
-- fit augmentation 包含共同 crop、horizontal／vertical flip、endpoint swap、可逆 affine、
-  brightness／contrast／saturation、Gaussian blur 與 returned-last-frame erasing。所有 seed、
-  affine inverse、valid support、profile 與 recipe 都可重播並雜湊。
+  native crop；validation 使用 epoch-invariant appearance probe＋center crop，calibration／evaluation
+  使用 identity appearance＋center crop。crop 採 U²Flow 公開程式的 384×832；論文文字中的
+  448×1024 仍保留為 provenance，不混成同一設定。
+- U0 v1 baseline 仍只開啟 appearance transforms；integrated v2 會啟用 affine、flip 與
+  endpoint swap，並輸出 native-crop→augmented-lattice 的 affine 及 endpoint order。teacher
+  flow 以 inverse sampling、endpoint support 與 affine linear map 做 exact vector transport。
+  所有 seed、matrix、valid support、profile 與 recipe 都可重播並雜湊。
 - inventory 只讀 RGB，不搜尋或解碼 flow GT。未來 action-bank outcomes 以每列保留的獨立
   namespace 另外 join，不會成為 U0 runtime feature。
 
@@ -129,11 +137,102 @@ PYTHONPATH=src python scripts/prepare_u0_sintel_u2flow_data.py \
   --output experiments/U0_sintel_u2flow_data_v1/INPUT_MANIFEST.json
 ```
 
-這是 U0 observer 的 development manifest 與 RGB view primitive，不是可直接開訓的 U²Flow
-官方 reproduction：本機尚未加入 Sintel Raw、SAM masks 或官方 U²Flow checkpoint；teacher
-flow／occlusion／uncertainty target 的同步幾何轉換及 training Dataset 尚未接上。公開程式中的
-per-frame relative affine 也尚未逐式移植；目前 profile 明確標記為 shared-pair affine，之後
-可在不改資料 split 的情況下升級。
+目前已有兩條明確分開的實驗路徑：post-hoc U0 baseline，以及 integrated recurrent v2。
+後者從每次 SEA-RAFT hidden state 預測 log-variance，以 `sigmoid(-alpha).detach()` 縮放 flow
+feature，再由 zero-initialized residual head 修正同一次 recurrent update。augmentation residual
+同時產生有 flow gradient 的 `L_ar` 與 residual-detached 的 Laplace `L_unc`，不再把單獨外掛
+uncertainty head 冒充完整 U²Flow。
+
+## 訓練 U0 uncertainty
+
+固定設定在：
+
+```text
+configs/stablebridge/u0_sintel_searaft_train_v1.json
+```
+
+直接訓練（需要可見 CUDA）：
+
+```bash
+PYTHONPATH=src /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python \
+  scripts/train_u0_uncertainty.py \
+  --config configs/stablebridge/u0_sintel_searaft_train_v1.json \
+  --device cuda --resume auto
+```
+
+正式 worker 由 `run_u0_uncertainty_when_gpu_free.py` 負責二次 GPU snapshot、free-memory／utilization
+門檻、per-GPU lock、`CUDA_VISIBLE_DEVICES` 與斷點續訓。seed-11 baseline 已完成 20 epochs／
+2720 steps；best checkpoint 是 epoch 3，而不是最後一輪。輸出位於：
+
+```text
+operations/U0_sintel_searaft_v1_seed11/status.json
+experiments/U0_sintel_searaft_v1/seed11/{metrics.jsonl,latest.pt,best.pt}
+```
+
+查詢狀態：
+
+```bash
+PYTHONPATH=src /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python \
+  scripts/run_u0_uncertainty_when_gpu_free.py status \
+  --state-dir operations/U0_sintel_searaft_v1_seed11
+```
+
+## 訓練 recurrent uncertainty-aware flow
+
+正式消融固定為三個 v2 config，資料 split、optimizer、loss weights 與 iteration count 相同：
+
+```text
+u2_sintel_searaft_head_only_v2.json                 # matcher frozen；只訓練 hidden-state UE
+u2_sintel_searaft_refinement_no_uncertainty_v2.json # 相同 refiner，以 ones/zero dummy maps 控制參數量
+u2_sintel_searaft_uncertainty_refinement_v2.json    # detached uncertainty feedback（主模型）
+```
+
+主模型命令：
+
+```bash
+PYTHONPATH=src /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python \
+  scripts/train_integrated_uncertainty_flow.py \
+  --config configs/stablebridge/u2_sintel_searaft_uncertainty_refinement_v2.json \
+  --device cuda --resume auto
+```
+
+每次 validation 都保存 task／augmentation／uncertainty loss，以及 held-out GT 的 EPE、AUSE、
+Spearman、severe-error AUROC 與 coverage calibration MAE。現有資料只有 Sintel Clean/Final，
+因此 v2 以 Sintel GT 作 flow task carrier，而 uncertainty supervision 仍只來自 augmentation
+consistency；這是 U²Flow-style SEA-RAFT adaptation，不宣稱是論文的 Raw→Clean/Final 完整
+unsupervised reproduction。配置使用 SEA-RAFT Spring-M 的 4 recurrent iterations；所有消融都
+固定相同 K。
+
+先前的 `train_u1_flow_refiner.py` 與 `train_u2_uncertainty_flow.py` 保留為 one-shot post-hoc／
+alternating ablation，但不是主模型，也不可標成 U²Flow reproduction。
+
+integrated trainer 可沿用 durable GPU scheduler：
+
+```bash
+PYTHONPATH=src /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python \
+  scripts/run_gpu_training_when_free.py start \
+  --state-dir operations/U2_sintel_searaft_uncertainty_refinement_v2_seed11 \
+  --minimum-free-mib 16000 --maximum-utilization-percent 10 \
+  --allowed-indices 0,1,2,3,4,5,6 -- \
+  /usr/bin/env PYTHONPATH=/ssd1/cactus8603/roco_main/src:/ssd1/cactus8603/roco_main \
+  /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python \
+  /ssd1/cactus8603/roco_main/scripts/train_integrated_uncertainty_flow.py \
+  --config /ssd1/cactus8603/roco_main/configs/stablebridge/u2_sintel_searaft_uncertainty_refinement_v2.json \
+  --device cuda --resume auto
+```
+
+Action-bank selector 的 nested grouped trainer 已存在於
+`research/action_bank_29_finalization_20261005/train_dynamic_group_router.py`。它要等 frozen
+各 flow provider 重新 materialize action outcomes 後分開訓練；不同 flow provider 的
+outcomes、normalizer、calibration 或 selector checkpoint 不得互用。正式消融至少保留：
+
+```text
+BASE:    frozen SEA-RAFT
+HEAD:    recurrent uncertainty head, matcher frozen
+DUMMY:   recurrent refiner with no uncertainty signal
+U2-MAIN: recurrent refiner with detached uncertainty feedback
+POSTHOC: frozen U0 + bounded one-shot refiner (optional legacy ablation)
+```
 
 ## KITTI 2012／2015 本機資料
 

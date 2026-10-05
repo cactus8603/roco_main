@@ -1,0 +1,64 @@
+{
+  "schema": "stablebridge-uncertainty-flow-trainer/v1",
+  "run_dir": "/ssd1/cactus8603/roco_main/experiments/U1_sintel_searaft_refiner_v1/seed11",
+  "stage": "frozen_uncertainty_refiner",
+  "dataset": {
+    "factory": "stablebridge.physical_repair.u0_sintel_dataset:build_sintel_u1_dataset_from_config_v1",
+    "kwargs": {
+      "config_path": "/ssd1/cactus8603/roco_main/configs/stablebridge/u0_sintel_u2flow_data_v1.json",
+      "validation_appearance_probe": false
+    },
+    "fit_split": "fit",
+    "validation_split": "validation",
+    "split_argument": "role",
+    "collate_fn": "stablebridge.physical_repair.u0_sintel_dataset:collate_sintel_u0_samples_v1"
+  },
+  "batch_preparer": {
+    "factory": "stablebridge.physical_repair.uncertainty_flow_trainer:make_sea_raft_refinement_preparer_v1",
+    "kwargs": {
+      "include_augmented_teacher": false,
+      "iters": 4,
+      "vendor_root": "/ssd7/cactus8603/roco_spring/optical-flow-track/vendor/SEA-RAFT",
+      "config_path": "/ssd7/cactus8603/roco_spring/optical-flow-track/vendor/SEA-RAFT/config/eval/spring-M.json",
+      "checkpoint": "/ssd7/cactus8603/roco_spring/optical-flow-track/checkpoints/sea-raft-spring-M/model.safetensors"
+    }
+  },
+  "observer_checkpoint": "/ssd1/cactus8603/roco_main/experiments/U0_sintel_searaft_v1/seed11/best.pt",
+  "require_completed_sources": true,
+  "refiner": {
+    "factory": "stablebridge.physical_repair.uncertainty_flow_trainer:make_bounded_uncertainty_flow_refiner_v1",
+    "kwargs": {
+      "feature_channels": 12,
+      "hidden_channels": 32,
+      "maximum_update_px": 1.0,
+      "evidence_role": "base_flow",
+      "minimum_update_fraction": 0.0
+    }
+  },
+  "refiner_checkpoint": null,
+  "loss": {
+    "task_weight": 1.0,
+    "harm_weight": 2.0,
+    "anchor_weight": 0.05,
+    "smoothness_weight": 0.01,
+    "harm_margin_px": 0.0,
+    "charbonnier_epsilon": 0.001
+  },
+  "training": {
+    "batch_size": 8,
+    "learning_rate": 0.0001,
+    "weight_decay": 0.0001,
+    "num_workers": 4,
+    "gradient_accumulation_steps": 1,
+    "checkpoint_every_steps": 50,
+    "validation_every_phase_epochs": 1,
+    "amp": true,
+    "seed": 11,
+    "pin_memory": true,
+    "gradient_clip_norm": 1.0,
+    "u1_epochs": 20,
+    "u2_rounds": 5,
+    "u2_observer_epochs_per_round": 1,
+    "u2_refiner_epochs_per_round": 1
+  }
+}

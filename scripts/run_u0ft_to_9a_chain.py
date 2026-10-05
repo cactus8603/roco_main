@@ -284,11 +284,18 @@ def _audit_checkpoint(
     refiner_lineage = check_source(
         "refiner_initialization_checkpoint", "refiner_initialization_lineage",
     )
+    model_lineage = check_source(
+        "model_initialization_checkpoint", "model_initialization_lineage",
+    )
     if (
         refiner_lineage is not None
         and refiner_lineage.get("uncertainty_initialization_lineage") != uncertainty_lineage
     ):
         raise ValueError(f"refiner and uncertainty initialization lineages differ: {path}")
+    if model_lineage is not None and (
+        uncertainty_lineage is not None or refiner_lineage is not None
+    ):
+        raise ValueError(f"full and partial initialization lineages coexist: {path}")
     if require_final_epoch:
         epochs = int(config["training"]["epochs"])
         if int(payload.get("epoch", -1)) != epochs or int(payload.get("next_batch_index", -1)) != 0:

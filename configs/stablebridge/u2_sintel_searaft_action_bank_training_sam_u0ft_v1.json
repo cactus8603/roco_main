@@ -1,11 +1,13 @@
 {
   "schema": "stablebridge-integrated-uncertainty-trainer/v2",
-  "run_dir": "/ssd1/cactus8603/roco_main/experiments/U2_sintel_searaft_action_bank_training_u0ft_v1/seed11",
+  "run_dir": "/ssd1/cactus8603/roco_main/experiments/U2_sintel_searaft_action_bank_training_sam_u0ft_v1/seed11",
   "dataset": {
     "factory": "stablebridge.physical_repair.u0_sintel_dataset:build_sintel_integrated_dataset_from_config_v2",
     "kwargs": {
       "config_path": "/ssd1/cactus8603/roco_main/configs/stablebridge/u0_sintel_u2flow_data_v1.json",
-      "validation_appearance_probe": true
+      "validation_appearance_probe": true,
+      "sam_full_segmentation_root": "/ssd1/cactus8603/roco_main/.runtime_tmp/sam_fullseg_sintel_vit_h",
+      "sam_checkpoint_sha256": "a7bf3b02f3ebf1267aba913ff637d9a2d5c33d3173bb679e46d9f338c26f262e"
     },
     "fit_split": "fit",
     "validation_split": "validation",
@@ -24,7 +26,7 @@
       "checkpoint": "/ssd7/cactus8603/roco_spring/optical-flow-track/checkpoints/sea-raft-spring-M/model.safetensors"
     }
   },
-  "model_initialization_checkpoint": "/ssd1/cactus8603/roco_main/experiments/U2_sintel_searaft_uncertainty_refinement_u0ft_v2/seed11/best.pt",
+  "model_initialization_checkpoint": "/ssd1/cactus8603/roco_main/experiments/U2_sintel_searaft_uncertainty_refinement_sam_u0ft_v1/seed11/best.pt",
   "u2_schedule": {
     "mode": "alternating_decoupled",
     "observer_epochs_per_round": 1,
@@ -35,6 +37,25 @@
     "augmentation_weight": 0.02,
     "uncertainty_weight": 0.005,
     "gamma": 0.8
+  },
+  "sam_homography": {
+    "enabled": true,
+    "weight": 0.1,
+    "maximum_regions": 6,
+    "uncertainty_variance_threshold": 2.0,
+    "minimum_reliable_points": 4,
+    "minimum_reliable_fraction": 0.2,
+    "ransac_reprojection_threshold": 3.0,
+    "minimum_inlier_fraction": 0.5,
+    "per_region_loss_cap": 0.5
+  },
+  "cuda_memory_reservation": {
+    "enabled": true,
+    "target_fraction": 0.88,
+    "minimum_headroom_mib": 3072,
+    "chunk_mib": 256,
+    "retry_fraction_decrement": 0.05,
+    "minimum_target_fraction": 0.65
   },
   "training": {
     "epochs": 20,

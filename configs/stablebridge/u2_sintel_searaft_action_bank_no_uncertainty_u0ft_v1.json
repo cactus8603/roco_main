@@ -24,8 +24,7 @@
       "checkpoint": "/ssd7/cactus8603/roco_spring/optical-flow-track/checkpoints/sea-raft-spring-M/model.safetensors"
     }
   },
-  "uncertainty_initialization_checkpoint": "/ssd1/cactus8603/roco_main/experiments/U0_sintel_searaft_recurrent_finetune_v2/seed11/best.pt",
-  "refiner_initialization_checkpoint": "/ssd1/cactus8603/roco_main/experiments/U1_sintel_searaft_recurrent_refiner_no_uncertainty_u0ft_v2/seed11/best.pt",
+  "model_initialization_checkpoint": "/ssd1/cactus8603/roco_main/experiments/U2_sintel_searaft_refinement_no_uncertainty_u0ft_v2/seed11/best.pt",
   "u2_schedule": {
     "mode": "alternating_decoupled",
     "observer_epochs_per_round": 1,

@@ -12,8 +12,8 @@ U2-main 在目前內部 validation protocol 上，最佳 EPE 已由 raw SEA-RAFT
 10，兩者僅差 `0.00004`，因此不像單次偶然尖峰。
 
 但這個數字尚不能直接宣稱超過官方 SEA-RAFT Sintel Clean `1.44`。目前 validation 是
-Clean+Final 混合的指定場景 crop，輸入尺度也和官方推論口徑不同；正式結論必須等待已
-排程的標準 Sintel Clean/Final 評測。
+Clean+Final 混合的指定場景 crop，資料範圍與官方 hidden test 不同；正式結論必須等待
+已排程的標準 Sintel Clean/Final 評測。
 
 ## SEA-RAFT / U2 核心證據
 
@@ -136,9 +136,22 @@ training gain 已在 WAFT 複現」。
 - 新的 U2/SAM 訓練效果已跨到 WAFT；
 - 最後一個 epoch 優於 best checkpoint。
 
-目前 SEA-RAFT 內部 protocol 另有 `[0,1]` 輸入，而官方 backbone 預期 `[0,255]` 後再於
-模型內正規化的尺度差異。標準 full-resolution Clean/Final evaluator 已排程，將直接檢驗
-57.4% 的內部改善能否跨口徑成立。
+### 輸入／輸出尺度稽核
+
+程式逐段稽核後確認目前沒有 double normalization：dataset 與 augmentation 在 `[0,1]`
+運作，trainer 只在 matcher boundary 乘一次 `255`，SEA-RAFT 再依官方實作於模型內計算
+`2*(rgb/255)-1`。標準 evaluator 則直接從 uint8 影像建立 `[0,255]` float tensor。
+
+SEA-RAFT 輸出與 Sintel `.flo` ground truth 都是 output-lattice pixel displacement；refiner 的
+最大更新量也是 pixel units，沒有額外的 255 倍輸出轉換。因此現有 `1.3556` 不是模型在
+學 RGB/flow 尺度互換。不確定性仍來自資料範圍、場景 crop、Clean/Final 混合、上游
+Sintel exposure 與 repeated model selection。
+
+新的 fail-closed contract 會拒絕 dataset RGB 超出 `[0,1]` 或 evaluator RGB 超出
+`[0,255]`，並把 matcher input / flow output units 寫進 training metrics 與 evaluation JSON。
+
+標準 full-resolution Clean/Final evaluator 已排程，將檢驗 57.4% 的內部改善能否跨資料與
+評測口徑成立。
 
 ## 當前執行狀態
 

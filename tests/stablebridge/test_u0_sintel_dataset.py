@@ -13,10 +13,15 @@ import torch
 from stablebridge.physical_repair.u0_sintel_dataset import (
     SintelU0UncertaintyDatasetV1,
     build_sintel_integrated_dataset_from_config_v2,
+    build_sintel_recurrent_u0_dataset_from_config_v2,
     collate_sintel_u0_samples_v1,
     make_sintel_u0_dataloader_v1,
     photometric_only_u0_profile_v1,
     read_sintel_flow_v1,
+)
+from stablebridge.physical_repair.candidate_action_bank import (
+    OPTICAL_FLOW_CAPACITY_ACTION_IDS,
+    OPTICAL_NATIVE_ACTION_ID,
 )
 from stablebridge.physical_repair.u2flow_augmentations import (
     U2FlowAugmentationProfileV1,
@@ -213,6 +218,95 @@ def test_integrated_dataset_emits_exact_spatial_transport_metadata(sintel_root, 
     assert not sample["augmentation_valid"].all()
     # Native GT support is independent of the augmented affine support.
     assert int(sample["ground_truth_valid"].sum()) == 47
+
+
+def test_recurrent_u0_keeps_spatial_views_but_does_not_open_fit_truth(
+    sintel_root, tmp_path, monkeypatch,
+):
+    _populate(sintel_root)
+    profile = _profile()
+    config = {
+        "manifest_id": "synthetic-recurrent-u0-v2",
+        "stage": "finetune",
+        "root": str(sintel_root),
+        "base_frame_count": 2,
+        "fusion_context_frames": 3,
+        "fusion_context_enabled": False,
+        "splits": _splits(),
+        "crop_recipe": {"height": 6, "width": 8},
+        "augmentation_recipe": {
+            "master_seed": 17,
+            "profile": profile.as_dict(),
+            "profile_hash": profile.profile_hash,
+        },
+    }
+    path = tmp_path / "recurrent-u0.json"
+    path.write_text(__import__("json").dumps(config), encoding="utf-8")
+    fit = build_sintel_recurrent_u0_dataset_from_config_v2(path, role="fit")
+    original_open = Path.open
+
+    def guarded_open(candidate, *args, **kwargs):
+        if candidate.suffix == ".flo" or "invalid" in candidate.parts or "occlusions" in candidate.parts:
+            raise AssertionError("recurrent U0 fit attempted to open Sintel ground truth")
+        return original_open(candidate, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", guarded_open)
+    sample = fit[0]
+    assert sample["ground_truth_flow"] is None
+    assert sample["ground_truth_valid"] is None
+    assert sample["swap_endpoints"] is True
+    assert sample["action_id"] == OPTICAL_NATIVE_ACTION_ID
+
+    monkeypatch.setattr(Path, "open", original_open)
+    validation = build_sintel_recurrent_u0_dataset_from_config_v2(
+        path, role="validation",
+    )[0]
+    assert validation["ground_truth_flow"].shape == (2, 6, 8)
+    assert validation["ground_truth_valid"].dtype is torch.bool
+
+
+def test_integrated_dataset_materializes_capacity_action_and_iteration_override(
+    sintel_root, tmp_path,
+):
+    _populate(sintel_root)
+    profile = _profile()
+    config = {
+        "manifest_id": "synthetic-action-aware-sintel-v2",
+        "stage": "finetune",
+        "root": str(sintel_root),
+        "base_frame_count": 2,
+        "fusion_context_frames": 3,
+        "fusion_context_enabled": False,
+        "splits": _splits(),
+        "crop_recipe": {"height": 6, "width": 8},
+        "augmentation_recipe": {
+            "master_seed": 17,
+            "profile": profile.as_dict(),
+            "profile_hash": profile.profile_hash,
+        },
+    }
+    path = tmp_path / "action-aware.json"
+    path.write_text(__import__("json").dumps(config), encoding="utf-8")
+    dataset = build_sintel_integrated_dataset_from_config_v2(path, role="fit")
+    native = dataset[0]
+    assert native["action_id"] == OPTICAL_NATIVE_ACTION_ID
+    dataset.set_action_id("CSB/OF/SEA-RAFT/action/P1-gaussian-s1")
+    blurred = dataset[0]
+    assert blurred["action_id"].endswith("P1-gaussian-s1")
+    assert blurred["matcher_iterations_override"] is None
+    assert not torch.equal(native["native_frames"], blurred["native_frames"])
+    dataset.set_action_id("CSB/OF/SEA-RAFT/action/R7-iters12")
+    compute = dataset[0]
+    assert compute["matcher_iterations_override"] == 12
+    assert torch.equal(native["native_frames"], compute["native_frames"])
+    for action_id in OPTICAL_FLOW_CAPACITY_ACTION_IDS:
+        dataset.set_action_id(action_id)
+        materialized = dataset[0]
+        assert materialized["action_id"] == action_id
+        assert torch.isfinite(materialized["native_frames"]).all()
+        assert torch.isfinite(materialized["augmented_frames"]).all()
+    with pytest.raises(ValueError, match="E292"):
+        dataset.set_action_id("CSB/OF/SEA-RAFT/action/P2-unsharp-s1")
 
 
 def test_held_out_reads_flow_masks_and_is_epoch_invariant(sintel_root):

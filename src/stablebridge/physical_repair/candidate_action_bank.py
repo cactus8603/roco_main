@@ -416,6 +416,53 @@ OPTICAL_FLOW_OPENED_CANDIDATE_BANK_HASH = _sha256([
     for key in sorted(OPTICAL_FLOW_OPENED_CANDIDATE_BANK)
 ])
 
+# E292 keeps every discrete strength needed to preserve the opened
+# cross-component oracle ceiling over KITTI, Sintel, and RoCo-Spring.  This is
+# a capacity bank, not a selector-admission or production-authority decision.
+# Native remains an external mandatory fallback and is not counted among the
+# nine nonnative anchors.
+OPTICAL_FLOW_CAPACITY_ACTION_IDS = (
+    "CSB/OF/SEA-RAFT/action/V3-gaussian-s0p5",
+    "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+    "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+    "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+    "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+    "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+    "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+    "CSB/OF/SEA-RAFT/action/P4-iters8",
+    "CSB/OF/SEA-RAFT/action/R7-iters12",
+)
+OPTICAL_FLOW_CAPACITY_FAMILIES: Mapping[str, tuple[str, ...]] = MappingProxyType({
+    "optical.lowpass_hf_suppression.v1": (
+        "CSB/OF/SEA-RAFT/action/V3-gaussian-s0p5",
+        "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+        "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+        "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+    ),
+    "optical.detail_recovery_unsharp.v1": (
+        "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+    ),
+    "optical.joint_radiometry.v1": (
+        "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+        "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+    ),
+    "optical.matcher_compute.v1": (
+        "CSB/OF/SEA-RAFT/action/P4-iters8",
+        "CSB/OF/SEA-RAFT/action/R7-iters12",
+    ),
+})
+OPTICAL_FLOW_CAPACITY_BANK: Mapping[str, FrozenActionArm] = MappingProxyType({
+    action_id: OPTICAL_FLOW_ACTION_BANK[action_id]
+    for action_id in OPTICAL_FLOW_CAPACITY_ACTION_IDS
+})
+OPTICAL_FLOW_CAPACITY_BANK_HASH = _sha256([
+    OPTICAL_FLOW_CAPACITY_BANK[key].selector_payload(include_hash=True)
+    for key in sorted(OPTICAL_FLOW_CAPACITY_BANK)
+])
+OPTICAL_FLOW_CAPACITY_SOURCE_MANIFEST_SHA256 = (
+    "44cca26c88c42430f59be890ea58290af4d233ab81056f3f15776121ae7aa065"
+)
+
 
 def validate_frozen_action_bank(
     bank: Mapping[str, FrozenActionArm] = OPTICAL_FLOW_ACTION_BANK,
@@ -571,6 +618,11 @@ __all__ = [
     "FrozenActionReceipt",
     "OPTICAL_FLOW_ACTION_BANK",
     "OPTICAL_FLOW_ACTION_BANK_HASH",
+    "OPTICAL_FLOW_CAPACITY_ACTION_IDS",
+    "OPTICAL_FLOW_CAPACITY_BANK",
+    "OPTICAL_FLOW_CAPACITY_BANK_HASH",
+    "OPTICAL_FLOW_CAPACITY_FAMILIES",
+    "OPTICAL_FLOW_CAPACITY_SOURCE_MANIFEST_SHA256",
     "OPTICAL_FLOW_MINIMAL_PILOT_ACTION_IDS",
     "OPTICAL_FLOW_MINIMAL_PILOT_BANK",
     "OPTICAL_FLOW_MINIMAL_PILOT_BANK_HASH",

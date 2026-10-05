@@ -187,6 +187,21 @@ u2_sintel_searaft_refinement_no_uncertainty_v2.json # 相同 refiner，以 ones/
 u2_sintel_searaft_uncertainty_refinement_v2.json    # detached uncertainty feedback（主模型）
 ```
 
+正式流程先訓練 recurrent native-only U0；fit split 不讀 flow GT，只以 detached
+augmentation discrepancy 訓練 uncertainty likelihood，best checkpoint 依 validation
+uncertainty NLL 選擇：
+
+```bash
+PYTHONPATH=src /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python \
+  scripts/train_integrated_uncertainty_flow.py \
+  --config configs/stablebridge/u0_sintel_searaft_recurrent_v2.json \
+  --device cuda --resume auto
+```
+
+完成後，兩個 refiner configs 與 9-anchor training config 會 fail-closed 地載入這份
+native-only head checkpoint，核對 config digest、matcher lineage、iteration count、完成 receipt
+及 checkpoint SHA-256，再開始後續訓練。
+
 主模型命令：
 
 ```bash
@@ -195,6 +210,23 @@ PYTHONPATH=src /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python 
   --config configs/stablebridge/u2_sintel_searaft_uncertainty_refinement_v2.json \
   --device cuda --resume auto
 ```
+
+9-anchor E292 capacity bank 已接到同一個 dataset／trainer。正式介面使用 epoch-homogeneous
+action scheduling，避免同一 batch 混入不同 SEA-RAFT recurrent iteration counts；預設 20
+epochs 依序走 `native + 9 anchors` 兩輪，而 validation 固定 native，讓 checkpoint 選擇可比：
+
+```bash
+PYTHONPATH=src /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python \
+  scripts/train_integrated_uncertainty_flow.py \
+  --config configs/stablebridge/u2_sintel_searaft_action_bank_training_v1.json \
+  --device cuda --resume auto
+```
+
+bank 定義在 `configs/stablebridge/optical_flow_capacity_9anchor_v1.json`。訓練 checkpoint
+會保存 bank hash 與 E292 source-manifest hash；每個 train-step receipt 也記錄 action 與實際
+matcher iterations。影像 operators 同時套用在 native／augmented pair，iterations 8／12
+則直接覆寫該 epoch 的 matcher 迭代數。這仍是 capacity-aware training，不等同 action
+selector 已通過 fresh admission。
 
 每次 validation 都保存 task／augmentation／uncertainty loss，以及 held-out GT 的 EPE、AUSE、
 Spearman、severe-error AUROC 與 coverage calibration MAE。現有資料只有 Sintel Clean/Final，
@@ -273,10 +305,11 @@ multi_action.enabled      = false
 maximum committed actions = 1
 continuous strength       = false
 final validated bank      = empty
+capacity training bank    = E292 9 anchors + native (TEST_ONLY)
 ```
 
-29-arm catalog 是可追溯 inventory；opened-development reduction 目前只產生下一輪驗證候選，
-尚未產生 final active action bank。既有 Work-B uncertainty artifacts 也混有 native／action
+29-arm catalog 是可追溯 inventory；E292 的 9-anchor bank 已作為 capacity-aware training
+介面，但尚未產生通過 fresh selector admission 的 active production bank。既有 Work-B uncertainty artifacts 也混有 native／action
 states，不能冒充 native-only U0 checkpoint。
 
 ## 文件與重算入口

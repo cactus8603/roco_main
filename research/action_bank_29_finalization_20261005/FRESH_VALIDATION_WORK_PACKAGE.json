@@ -1,6 +1,6 @@
 {
   "schema": "action-bank-fresh-validation-work-package/v1",
-  "status": "FROZEN_METHOD_WITH_REJECT_ONLY_FRESH_PANEL_WAITING_FOR_POWERED_EXTENSION_AND_OUTCOMES",
+  "status": "FROZEN_METHOD_WITH_REJECT_ONLY_PHASE1_AND_POWERED_H2_FINAL_PROTOCOL_WAITING_FOR_AUTHORITY_AND_OUTCOMES",
   "authority": {
     "action_admission": false,
     "continuous_strength": false,
@@ -193,6 +193,10 @@
       "path": "experiments/E280_dynamic_group_router_parity_v1/PARITY.json",
       "sha256": "750ae3737fded42a13103611dcc7bfe33b65aa99cdf3e66d8944156f6faa423a"
     },
+    "dynamic_router_outer_label_invariance": {
+      "path": "experiments/E287_dynamic_router_outer_leakage_test_v1/RESULT.json",
+      "sha256": "6983e8283693e415e022b2d6486e9047e8c74b9f6499783e36a1bece40161193"
+    },
     "action_loo_diagnostic": {
       "path": "research/action_bank_29_finalization_20261005/E279_SELECTION_AWARE_LOO_RESULT.json",
       "sha256": "47ab4160cbb029d3f3349684a7f189526834b1ffafe0532c6f3af08b4ecb51cc"
@@ -215,7 +219,23 @@
     },
     "powered_panel_options_audit": {
       "path": "research/action_bank_29_finalization_20261005/POWERED_PANEL_OPTIONS_AUDIT.json",
-      "sha256": "9352b6d00afaca0b4ede5110a7261865cfb572020ff8a5c1e269ab06d3b9817a"
+      "sha256": "e801fda9f0d5ffbdd7fe25d4b6bc38286f21a21a1fefc24e56790e8cdadccf91"
+    },
+    "powered_h2_r4_final_protocol": {
+      "path": "experiments/E288_h2_r4_final_protocol_freeze_v1/PROTOCOL.json",
+      "sha256": "f170c5e66394aaa03344b8a0d1b9a817d2ba8addcdb6a7c2fa71cf5d232b8110"
+    },
+    "powered_h2_r4_exact_panel": {
+      "path": "experiments/E289_h2_r4_panel_freeze_v1/PANEL_MANIFEST.json",
+      "sha256": "c8373799920f10c6568f4a042c790440071ad3c677ed681b1653e99118b92380"
+    },
+    "powered_h2_r4_preoutcome_protocol": {
+      "path": "experiments/E290_h2_r4_preoutcome_runner_v1/PROTOCOL.json",
+      "sha256": "d3fe023d785b039c1e6465f46dcf5c9343e3ca7d32f857ae4138fc91f8ff524b"
+    },
+    "powered_h2_r4_preoutcome_tests": {
+      "path": "experiments/E290_h2_r4_preoutcome_runner_v1/TEST_RESULTS.json",
+      "sha256": "c72aed18a97283a107e93f8b24d1143754061b1b952b7b07c7074841733314ba"
     },
     "primary_confirmation_shortlist": {
       "path": "research/action_bank_29_finalization_20261005/PRIMARY_CONFIRMATION_SHORTLIST.json",
@@ -231,11 +251,11 @@
     },
     "external_panel_r4_reject_only_scoring_protocol": {
       "path": "experiments/E286_tartanair_r4_reject_only_scoring_v1/PROTOCOL.json",
-      "sha256": "046deed0facefba4f29e84bae276ff97b1221d8e84986b2fb732cb775277d3e6"
+      "sha256": "e9bdb0435acce52eab1d8ce5b98e8bfdb7c7ab519fd21c0f10bd87d5423e2179"
     },
     "external_panel_r4_scoring_tests": {
       "path": "experiments/E286_tartanair_r4_reject_only_scoring_v1/TEST_RESULTS.json",
-      "sha256": "01a4e992bbae88657bad0845e36b6810ca4bc186b307ce1a3a5c498cd152dc2f"
+      "sha256": "7d9a69b43bee7e27b031e90a0a00386d42c4b88df6d509b6119483b1d51a0b5f"
     },
     "gpu_action_preflight": {
       "path": "experiments/E283_action_bank_gpu_preflight_v1/PREFLIGHT.json",
@@ -246,6 +266,7 @@
     "method_and_run_matrix_frozen": true,
     "primary_r4_confirmation_plan_frozen": true,
     "dynamic_trainer_parity_verified": true,
+    "dynamic_trainer_outer_target_isolation_verified": true,
     "gpu_action_preflight_verified": true,
     "fresh_panel_manifest_available": true,
     "fresh_panel_independent_group_count": 20,
@@ -256,6 +277,17 @@
     "sealed_h2_current_corruption_count": 5,
     "sealed_h2_normative_corruption_coverage_satisfied": false,
     "sealed_h2_execution_authorized": false,
+    "powered_r4_final_protocol_frozen": true,
+    "powered_r4_final_protocol_independent_group_count": 70,
+    "powered_r4_final_protocol_normative_corruption_count": 20,
+    "powered_r4_final_protocol_normative_coverage_satisfied": true,
+    "powered_r4_final_protocol_execution_authorized": false,
+    "powered_r4_exact_panel_frozen": true,
+    "powered_r4_exact_panel_row_count": 4270,
+    "powered_r4_exact_panel_payloads_opened": false,
+    "powered_r4_preoutcome_runner_frozen": true,
+    "powered_r4_preoutcome_fail_closed_tests_passed": true,
+    "powered_r4_preoutcome_execution_authorized": false,
     "powered_authorized_panel_available": false,
     "fresh_before_only_feature_records_available": true,
     "fresh_native_r4_prediction_receipts_available": true,

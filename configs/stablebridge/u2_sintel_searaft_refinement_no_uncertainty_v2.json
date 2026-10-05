@@ -23,6 +23,7 @@
       "checkpoint": "/ssd7/cactus8603/roco_spring/optical-flow-track/checkpoints/sea-raft-spring-M/model.safetensors"
     }
   },
+  "uncertainty_initialization_checkpoint": "/ssd1/cactus8603/roco_main/experiments/U0_sintel_searaft_recurrent_v2/seed11/best.pt",
   "loss": {
     "task_weight": 1.0,
     "augmentation_weight": 0.02,

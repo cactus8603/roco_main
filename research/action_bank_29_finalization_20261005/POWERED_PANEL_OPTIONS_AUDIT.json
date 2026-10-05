@@ -1,6 +1,6 @@
 {
   "schema": "action-bank-powered-panel-options-audit/v1",
-  "status": "AUDITED_WAITING_FOR_AUTHORITY",
+  "status": "AUDITED_POWERED_R4_PROTOCOL_FROZEN_WAITING_FOR_AUTHORITY_AND_PHASE1",
   "created_at": "2026-10-05",
   "question": "Which untouched independent-group panel can support final action-bank confirmation without treating folds as new samples?",
   "planning_basis": {
@@ -32,11 +32,29 @@
       "currently_frozen_corruption_count": 5,
       "required_normative_corruption_count": 20,
       "normative_corruption_coverage_satisfied": false,
+      "action_bank_final_protocol_frozen": true,
+      "action_bank_final_protocol_corruption_count": 20,
+      "action_bank_final_protocol_normative_coverage_satisfied": true,
+      "action_bank_final_protocol_execution_authorized": false,
+      "action_bank_exact_panel_frozen": true,
+      "action_bank_exact_panel_row_count": 4270,
+      "action_bank_exact_panel_payloads_opened": false,
+      "action_bank_preoutcome_runner_frozen": true,
+      "action_bank_preoutcome_fail_closed_tests_passed": true,
+      "action_bank_preoutcome_execution_authorized": false,
       "outcomes_opened": false,
       "authorized_for_execution": false,
-      "powered_for_positive_admission": "group count meets only the R4 65-group planning threshold, not the 136- or 607-group thresholds; the existing five-corruption H2 contract also fails the required 20-corruption coverage",
-      "permitted_inference": "none until explicit authority and a separate final H2 protocol are frozen",
-      "forbidden_inference": "any H2 image decode, model forward, truth read, or outcome analysis under the current readiness state",
+      "powered_for_positive_admission": "the E288 action-bank-specific protocol has 70 groups and 20 corruptions, meeting the R4 65-group planning threshold and normative coverage; it is not powered for P1/R2 and remains unauthorized",
+      "permitted_inference": "none until E286 survives, existing H2 governance authorizes access (or a versioned exception is approved), and explicit user authorization is present",
+      "forbidden_inference": "any H2 image decode, model forward, truth read, or outcome analysis under the current authorization state",
+      "action_bank_final_protocol_path": "experiments/E288_h2_r4_final_protocol_freeze_v1/PROTOCOL.json",
+      "action_bank_final_protocol_sha256": "f170c5e66394aaa03344b8a0d1b9a817d2ba8addcdb6a7c2fa71cf5d232b8110",
+      "action_bank_exact_panel_path": "experiments/E289_h2_r4_panel_freeze_v1/PANEL_MANIFEST.json",
+      "action_bank_exact_panel_sha256": "c8373799920f10c6568f4a042c790440071ad3c677ed681b1653e99118b92380",
+      "action_bank_preoutcome_protocol_path": "experiments/E290_h2_r4_preoutcome_runner_v1/PROTOCOL.json",
+      "action_bank_preoutcome_protocol_sha256": "d3fe023d785b039c1e6465f46dcf5c9343e3ca7d32f857ae4138fc91f8ff524b",
+      "action_bank_preoutcome_tests_path": "experiments/E290_h2_r4_preoutcome_runner_v1/TEST_RESULTS.json",
+      "action_bank_preoutcome_tests_sha256": "c72aed18a97283a107e93f8b24d1143754061b1b952b7b07c7074841733314ba",
       "split_binding_path": "experiments/E29_external_joint_panel/split_manifest.json",
       "split_binding_sha256": "22c5c66d90f481f57c15e7c15027f691169d9e3a78ca603194e25132f9189245",
       "readiness_path": "experiments/E186_h2_same_data_cost_readiness/readiness.json",
@@ -50,5 +68,5 @@
       }
     }
   ],
-  "conclusion": "E284 is scientifically useful but reject-only. H2 has enough groups for the R4-only primary hypothesis but its existing contract covers only five corruptions rather than the required 20 and it remains sealed; it cannot be used without explicit authority and a new action-bank-specific final protocol. No currently authorized panel supports positive final admission."
+  "conclusion": "E284 is scientifically useful but reject-only. E288 freezes a 70-scene, 20-corruption H2 final protocol powered only for R4, E289 freezes its exact 4,270-row population from metadata, and E290 freezes and tests the target-free GPU runner. H2 remains sealed and cannot be used unless E286 first survives, existing H2 governance authorizes access (or a versioned exception is approved), and explicit user authorization is present. No currently authorized panel supports positive final admission."
 }

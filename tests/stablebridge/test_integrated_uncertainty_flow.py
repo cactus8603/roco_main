@@ -131,3 +131,28 @@ def test_augmentation_loss_is_the_explicit_flow_gradient_path():
     assert float(parts.uncertainty.detach()) == pytest.approx(
         math.sqrt(2.0) * 0.8, rel=1e-6,
     )
+
+
+def test_native_only_u0_accepts_missing_fit_truth_only_when_task_is_disabled():
+    native = torch.zeros(1, 2, 3, 4, requires_grad=True)
+    augmented = torch.full((1, 2, 3, 4), 0.4, requires_grad=True)
+    alpha = torch.zeros(1, 1, 3, 4, requires_grad=True)
+    teacher = torch.zeros_like(augmented)
+    valid = torch.ones(1, 1, 3, 4, dtype=torch.bool)
+    u0 = DecoupledFlowLossPolicyV2(
+        task_weight=0.0, augmentation_weight=0.0, uncertainty_weight=1.0,
+    )
+    parts = decoupled_uncertainty_flow_loss_v2(
+        [native], [augmented], [alpha], None, None, teacher, valid, policy=u0,
+    )
+    assert float(parts.task.detach()) == 0.0
+    parts.total.backward()
+    assert alpha.grad is not None and float(alpha.grad.abs().sum()) > 0.0
+    supervised = DecoupledFlowLossPolicyV2(
+        task_weight=1.0, augmentation_weight=0.0, uncertainty_weight=0.0,
+    )
+    with pytest.raises(ValueError, match="ground truth is required"):
+        decoupled_uncertainty_flow_loss_v2(
+            [native], [augmented], [alpha], None, None, teacher, valid,
+            policy=supervised,
+        )

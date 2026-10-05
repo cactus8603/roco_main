@@ -5,11 +5,13 @@
 舊架構與 cache 的保留／搬移判斷見 [清理紀錄](CLEANUP.md)。
 
 狀態：family-aware proposal、uncertainty evidence binding、U0 native-only training／calibration
-契約、bounded flow-refinement primitive、U1 conservative loss、GPU admission 與 opt-in
-multi-action orchestration 已實作；multi-action 預設關閉，runtime uncertainty 預設只觀測、
-不改 flow。29-arm inventory 先經 capacity 精簡為 4-family／10-anchor，再經
-可觀測路由診斷收斂為 3-family／4-control 凍結候選。因 E275--E278 重複使用同一 E3 OOF
-結果，final validated bank 仍為空；新模組是研究接線，不代表 production promotion。
+契約、bounded flow-refinement primitive、U1 conservative loss、可續訓的 U1／U2 decoupled
+trainer、GPU admission 與 opt-in multi-action orchestration 已實作；multi-action 預設關閉，
+runtime uncertainty 預設只觀測、不改 flow。新的 E292 三資料集 capacity audit 顯示，若問題是 oracle 修復上限，29-arm
+inventory 應先整理為 9 個 mechanism families；其中可在 KITTI、Sintel、RoCo-Spring
+公平比較的 4 個 optical／matcher families 都必須保留。先前 3-family／4-control 或
+R4-only 結論屬於「可觀測路由／fresh admission」問題，不能拿來回答 capacity-bank
+問題。final validated bank 仍為空；新模組是研究接線，不代表 production promotion。
 
 ## 結論
 
@@ -34,9 +36,54 @@ checkpoint；`native` 是回到本次流程開始前的原始輸出。已花掉�
 
 > 每個 action 可以自行提出強度，但 action、強度與是否執行必須共同競爭。
 
-這裡的 runtime bank 不再是 29 個平行 action。29 只保留為可追溯 inventory；目前下一輪
-fresh validation 應凍結 **3 個 repair families、4 個離散 exact controls，加上 native**。
-尚未通過 fresh qualification，因此目前 final validated active bank 仍為空集合。
+這裡的 runtime bank 不再是 29 個平行 action。29 只保留為可追溯 inventory。若目標是
+盡可能保留跨 KITTI／Sintel／RoCo-Spring 的修復上限，capacity bank 應凍結 **4 個
+families 加上 native**；family head 再從 family-local anchors 中提出 1--2 個 exact
+strengths。若目標改成正式 selector admission，仍須另外通過 observable routing、risk 與
+fresh qualification；目前 final validated active bank 仍為空集合。
+
+### 三資料集 family 上限：E292
+
+E292 對 848 cases／116 個 outcome-blind scene-family groups 跑了真實 SEA-RAFT forwards：
+KITTI 520、Sintel 184、RoCo-Spring 144。native／STOP 永遠可 rollback；先在各資料集內算
+positive-only oracle retention，再對三個資料集等權平均。結果的 family-count Pareto 是：
+
+| Family 數 | 最佳組合 | 三資料集等權 retention | 最差資料集 retention |
+|---:|---|---:|---:|
+| 1 | low-pass | 57.9724% | 49.6930% |
+| 2 | low-pass + matcher compute | 83.1832% | 75.1715% |
+| 3 | low-pass + joint radiometry + matcher compute | 95.7787% | 93.9720% |
+| 4 | 加回 detail recovery | 100.0000% | 100.0000% |
+
+因此在凍結的「平均至少 99.5%、每個資料集至少 98%」gate 下，不能把 family 從 4 再縮成
+3。五個 grouped outer folds 都選回相同的四-family bank。這裡的四個 runtime competitors
+是：
+
+| Family | 建議 family-local proposal anchors |
+|---|---|
+| Low-pass HF suppression | Gaussian sigma `1.5 / 2.0` |
+| Detail recovery | unsharp sigma `1.0`、amount `1.5` |
+| Joint radiometry | per-channel percentile `1/99`；global percentile `5/95` |
+| Matcher compute | SEA-RAFT iterations `8 / 12` |
+
+這個 7-anchor aggressive grid 在全 848 cases 保留 99.6095% 的三資料集等權上限，最差資料集
+仍有 99.2949%；但 grouped 5-fold 中，fold-selected grid 有四折選 7 anchors、一折選 8，
+held-out 平均 retention 99.1208%，最差 fold／dataset 94.8445%，所以它是可直接實作的
+proposal grid，不是已穩定通過每一折的最終 strength reduction。opened-capacity final list
+因此採 9 anchors：在上述 7 個之外保留 Gaussian sigma `0.5 / 1.0`。固定後每折均跨過 gate，
+最差 fold-balanced retention 99.5009%、最差 fold／dataset 98.5553%；移除其中任一 anchor
+至少會有兩折失敗。四個 family 的 leave-one-family-out 在 5/5 held-out folds 都失敗，且
+scene-family cluster bootstrap 經四重比較校正後的 capacity-loss 下界都大於零。
+這個 9-anchor list 對 opened cross-component capacity 是 final，但它看過所有 opened folds，
+不能冒充 unbiased CV、fresh final evidence 或 production admission。runtime 時 family head
+仍只需提出最有希望的 1--2 個 strengths，不表示 9 anchors 會變成 9 個平行 action。
+
+完整 family 組合、32,767 個 exact-control subsets、pairwise repair-space overlap 與 grouped
+5-fold receipts 見 [E292](../../../experiments/E292_cross_component_action_family_frontier_v1/README.md)，
+final manifest 見 [FINAL_CAPACITY_ACTION_BANK.json](../../../experiments/E292_cross_component_action_family_frontier_v1/FINAL_CAPACITY_ACTION_BANK.json)。
+可攜、可由 runtime 與 trainer 直接驗證的 9-anchor manifest 則是
+[`optical_flow_capacity_9anchor_v1.json`](../../../configs/stablebridge/optical_flow_capacity_9anchor_v1.json)；
+它保存 E292 source-manifest SHA-256，但不攜帶 selector 或 production authority。
 
 ## 現有程式碼狀態
 
@@ -57,6 +104,9 @@ fresh validation 應凍結 **3 個 repair families、4 個離散 exact controls�
 - [Frozen 29-arm manifest](../../../experiments/E243_restoration_candidate_integration_v1/FROZEN_ACTION_BANK.json)
 
 ### 29 個 inventory entries 如何精簡
+
+以下段落保留 E3-only 的 routing／admission 歷史；其 10-anchor、4-control 與 R4-only
+shortlists 不取代上方 E292 的跨三資料集 capacity 結論。
 
 先按「真正改變 downstream failure mode 的方向」合併，而不是按模型名稱計數：Gaussian
 各 sigma 是同一 low-pass scale-space；unsharp 各 amount 是同一 detail-recovery path；
@@ -137,6 +187,10 @@ system，則應 hold out 整個 component。full bank 與四個 leave-one-action
 E280 已證明可變 K trainer 在既有 6-fold E278 上逐筆、逐輸出與模型 hash 完全重現；這只
 驗證實作，並未讓已開啟的 E3 重新變成 fresh evidence。詳見
 [E280 parity report](../../../experiments/E280_dynamic_group_router_parity_v1/README.md)。
+E287 再做 outcome-label falsification：只改寫 outer fold 0 的 120 筆 teacher losses 後完整
+重跑，該 fold 的 normalization／threshold／calibration、model hash、model outputs 與 selected
+actions 仍 exact equal，而 120 筆 evaluation values 與其餘五個合法 training folds 的模型均
+改變。這直接驗證 outer targets 不會流入自身決策；同樣只屬 implementation evidence。
 完整 fresh 執行已凍結成 9 個 unique router runs（full、action/family LOO、multi/single
 strength controls）；詳見 [fresh-validation work package](../../../research/action_bank_29_finalization_20261005/FRESH_VALIDATION_WORK_PACKAGE.json)。目前缺少 untouched powered panel、
 before-only features 與 exact action outcomes，因此 package 是可執行規格，不是通過證據。
@@ -155,8 +209,14 @@ preflight，不是 fresh statistical evidence，也不會讓任何 action 進 fi
 樣本數增加。另以 metadata-only audit 檢查仍封存的 KITTI H2：70 scenes 只跨過最小的
 65-group 門檻，未跨過 Gaussian sigma 1/2 的 136/607 規劃數，且目前
 `h2_execution_authorized=false`。既有 E186 H2 contract 也只有 5 種 corruption，未滿足
-本 action-bank 的 20-corruption coverage。未經明確授權與另行凍結具 normative coverage
-的 final H2 protocol，不得讀取其 image、GT 或執行 forward。
+本 action-bank 的 20-corruption coverage。E288 已補上 action-bank-specific 的 metadata-only
+final protocol：只測 R4、70 scenes、20 corruptions、outer 5-fold／inner 4-fold、共 4,270 rows，
+因此 method design 已符合 R4 的 65-group planning count 與 normative coverage；E289 再從
+既有 JSON metadata 封存全部 4,270 個 exact rows 與五折 scene assignment，仍未開啟任何
+H2 payload；E290 再凍結每 row 四次 forward／60 維 before-only feature 的 GPU runner，三個
+authorization-bypass tests 全部 fail closed 且 H2 access 維持零。不過 E286
+必須先存活、既有 H2 governance 必須授權（或核准 versioned exception），且仍需明確使用者
+授權；目前不得讀取其 image、GT 或執行 forward。
 E285 已把 E284 的 R4-only pre-outcome 階段全部完成：9,760 rows 各有 native/R4 prediction
 content hash 與 60 維 before-only features，且獨立重跑同列可逐項 exact reproduce；receipt
 中沒有 official-flow path。這只解除 inference／feature readiness blocker，仍未授權解碼
@@ -180,8 +240,12 @@ SwinIR、Retinexformer、defrost 與 despatter 在 full-action 或 fresh task-al
 - [Empty final validated bank](../../../research/action_bank_29_finalization_20261005/FINAL_VALIDATED_ACTION_BANK.json)
 - [E279 selection-aware LOO](../../../experiments/E279_selection_aware_loo_v1/README.md)
 - [E280 dynamic grouped-router parity](../../../experiments/E280_dynamic_group_router_parity_v1/README.md)
+- [E287 outer-label leakage falsification](../../../experiments/E287_dynamic_router_outer_leakage_test_v1/README.md)
 - [E281 family-level LOO](../../../experiments/E281_selection_aware_family_loo_lowpass_v1/README.md)
 - [E282 low-pass strength proposal](../../../experiments/E282a_lowpass_two_strength_router_v1/README.md)
+- [E288 powered H2 R4 final protocol](../../../experiments/E288_h2_r4_final_protocol_freeze_v1/README.md)
+- [E289 exact H2 R4 panel freeze](../../../experiments/E289_h2_r4_panel_freeze_v1/README.md)
+- [E290 authorized H2 target-free runner](../../../experiments/E290_h2_r4_preoutcome_runner_v1/README.md)
 - [Exhaustive 29-action admission matrix](../../../research/action_bank_29_finalization_20261005/ACTION_ADMISSION_MATRIX.json)
 - [Optical reduction result](../../../research/action_bank_29_finalization_20261005/OPTICAL_REDUCTION_RESULT.json)
 - [Reduction analysis](../../../research/action_bank_29_finalization_20261005/analyze_optical_reduction.py)
@@ -725,9 +789,12 @@ contracts。
 7. `uncertainty_refinement_training.py`：U1 的 robust EPE、相對 frozen base 的 per-pixel harm
    penalty、residual anchor 與 masked total variation；invalid pixels 在 refiner output 必須與
    base flow 完全相同；
-8. `gpu_admission.py`：UUID allowlist、空卡優先、共享卡 `free >= peak + margin`、雙 snapshot
+8. `uncertainty_flow_trainer.py`：從 hash-bound U0/U1 checkpoints 啟動 U1 或 U2，保存兩套
+   optimizer、AMP、RNG 與 phase cursor；U1 只更新 refiner，U2 依 observer/refiner phase
+   切換 `requires_grad`，不同 U0 lineage 會在開訓前 fail closed；
+9. `gpu_admission.py`：UUID allowlist、空卡優先、共享卡 `free >= peak + margin`、雙 snapshot
    重驗及 runtime/output/cache root denylist。
-9. `root_retry_replay.py`：只用既有 root-level outcomes 離線比較 one-shot 與 ROOT_RETRY；
+10. `root_retry_replay.py`：只用既有 root-level outcomes 離線比較 one-shot 與 ROOT_RETRY；
    STOP 後才試下一個、COMMIT 立即終止，所有已訪問 attempt cost 都不可回收，並以 scene
    group bootstrap 報 paired policy difference。它會明確拒絕用 root outcomes 假裝
    COMPOSED_CHAIN；後者仍需要真正的 action-transition bank。

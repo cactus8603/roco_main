@@ -28,6 +28,11 @@ def _close(left: float, right: float) -> bool:
 
 def main() -> None:
     from stablebridge.physical_repair.candidate_action_bank import (
+        OPTICAL_FLOW_CAPACITY_ACTION_IDS,
+        OPTICAL_FLOW_CAPACITY_BANK,
+        OPTICAL_FLOW_CAPACITY_BANK_HASH,
+        OPTICAL_FLOW_CAPACITY_FAMILIES,
+        OPTICAL_FLOW_CAPACITY_SOURCE_MANIFEST_SHA256,
         OPTICAL_FLOW_OPENED_CANDIDATE_ACTION_IDS,
         OPTICAL_FLOW_OPENED_CANDIDATE_BANK,
         OPTICAL_FLOW_OPENED_CANDIDATE_BANK_HASH,
@@ -46,6 +51,32 @@ def main() -> None:
     assert final["family_count"] == final["exact_control_count"] == 0
     assert not any(final["authority"].values())
     assert final["frozen_candidate_source"]["sha256"] == _sha256(MANIFEST_PATH)
+    capacity = final["cross_component_capacity_bank"]
+    capacity_path = ROOT / capacity["path"]
+    assert capacity["sha256"] == _sha256(capacity_path)
+    runtime_capacity = _load(capacity_path)
+    assert capacity["source_manifest_sha256"] == (
+        runtime_capacity["source_manifest_sha256"]
+    )
+    assert capacity["status"] == "FINAL_OPENED_CROSS_COMPONENT_CAPACITY_BANK"
+    assert capacity["authority"] == "capacity_only_not_selector_or_production"
+    assert runtime_capacity["exact_anchor_count"] == 9
+    assert runtime_capacity["family_count"] == 4
+    assert runtime_capacity["authority"]["production_authority"] is False
+    assert runtime_capacity["bank_hash"] == OPTICAL_FLOW_CAPACITY_BANK_HASH
+    assert runtime_capacity["source_manifest_sha256"] == (
+        OPTICAL_FLOW_CAPACITY_SOURCE_MANIFEST_SHA256
+    )
+    assert runtime_capacity["families"] == {
+        family: list(action_ids)
+        for family, action_ids in OPTICAL_FLOW_CAPACITY_FAMILIES.items()
+    }
+    assert tuple(
+        action_id
+        for action_ids in OPTICAL_FLOW_CAPACITY_FAMILIES.values()
+        for action_id in action_ids
+    ) == OPTICAL_FLOW_CAPACITY_ACTION_IDS
+    assert set(OPTICAL_FLOW_CAPACITY_BANK) == set(OPTICAL_FLOW_CAPACITY_ACTION_IDS)
     assert manifest["native_fallback_action_id"] == OPTICAL_NATIVE_ACTION_ID
     assert manifest["bank_hash"] == OPTICAL_FLOW_OPENED_CANDIDATE_BANK_HASH
 
@@ -151,7 +182,8 @@ def main() -> None:
     assert strength["two_strength_policy_value_passes_for_both_anchors"] is False
     assert strength["decision"] == "REJECT_ROUTED_STRENGTH_PROPOSAL_ON_OPENED_E3"
     print(
-        "PASS: 4-control opened candidate is hash-bound; final validated bank is empty"
+        "PASS: 4-control admission candidate and 9-anchor capacity bank are "
+        "hash-bound; final validated bank is empty"
     )
 
 

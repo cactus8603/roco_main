@@ -23,8 +23,8 @@ def _sha256(path: Path) -> str:
 def main() -> None:
     package = _load(PACKAGE)
     assert package["status"] == (
-        "FROZEN_METHOD_WITH_REJECT_ONLY_FRESH_PANEL_WAITING_FOR_"
-        "POWERED_EXTENSION_AND_OUTCOMES"
+        "FROZEN_METHOD_WITH_REJECT_ONLY_PHASE1_AND_POWERED_H2_FINAL_"
+        "PROTOCOL_WAITING_FOR_AUTHORITY_AND_OUTCOMES"
     )
     assert not any(package["authority"].values())
     candidates = tuple(package["candidate_action_ids"])
@@ -113,19 +113,69 @@ def main() -> None:
 
     options_source = package["frozen_sources"]["powered_panel_options_audit"]
     options = _load(ROOT / options_source["path"])
-    assert options["status"] == "AUDITED_WAITING_FOR_AUTHORITY"
+    assert options["status"] == (
+        "AUDITED_POWERED_R4_PROTOCOL_FROZEN_WAITING_FOR_AUTHORITY_AND_PHASE1"
+    )
     by_id = {item["option_id"]: item for item in options["options"]}
     assert by_id["E284_TARTANAIR_PHASE1"]["independent_groups"] == 20
     assert by_id["KITTI_H2"]["independent_groups"] == 70
     assert by_id["KITTI_H2"]["currently_frozen_corruption_count"] == 5
     assert by_id["KITTI_H2"]["required_normative_corruption_count"] == 20
     assert by_id["KITTI_H2"]["normative_corruption_coverage_satisfied"] is False
+    assert by_id["KITTI_H2"]["action_bank_final_protocol_frozen"] is True
+    assert by_id["KITTI_H2"]["action_bank_final_protocol_corruption_count"] == 20
+    assert by_id["KITTI_H2"]["action_bank_final_protocol_normative_coverage_satisfied"] is True
+    assert by_id["KITTI_H2"]["action_bank_final_protocol_execution_authorized"] is False
+    assert by_id["KITTI_H2"]["action_bank_exact_panel_frozen"] is True
+    assert by_id["KITTI_H2"]["action_bank_exact_panel_row_count"] == 4270
+    assert by_id["KITTI_H2"]["action_bank_exact_panel_payloads_opened"] is False
+    assert by_id["KITTI_H2"]["action_bank_preoutcome_runner_frozen"] is True
+    assert by_id["KITTI_H2"]["action_bank_preoutcome_fail_closed_tests_passed"] is True
+    assert by_id["KITTI_H2"]["action_bank_preoutcome_execution_authorized"] is False
     assert by_id["KITTI_H2"]["current_h2_execution_authorized"] is False
     assert by_id["KITTI_H2"]["current_access_counts"] == {
         "images_decoded": 0,
         "model_forwards": 0,
         "truth_reads": 0,
     }
+
+    h2_protocol_source = package["frozen_sources"]["powered_h2_r4_final_protocol"]
+    h2_protocol = _load(ROOT / h2_protocol_source["path"])
+    assert h2_protocol["status"] == "FROZEN_METADATA_ONLY_H2_ACCESS_NOT_AUTHORIZED"
+    assert h2_protocol["sealed_panel"]["scene_count"] == 70
+    assert h2_protocol["sealed_panel"]["corruption_count"] == 20
+    assert h2_protocol["sealed_panel"]["expected_row_count"] == 4270
+    assert h2_protocol["power_contract"]["powered_for_r4_positive_admission"] is True
+    assert h2_protocol["power_contract"]["powered_for_shadow_action_admission"] is False
+    assert not any(h2_protocol["authority"].values())
+
+    h2_panel_source = package["frozen_sources"]["powered_h2_r4_exact_panel"]
+    h2_panel = _load(ROOT / h2_panel_source["path"])
+    assert h2_panel["status"] == "FROZEN_METADATA_ONLY_H2_ACCESS_NOT_AUTHORIZED"
+    assert h2_panel["panel"]["independent_group_count"] == 70
+    assert h2_panel["panel"]["expanded_row_count"] == 4270
+    assert h2_panel["panel"]["groups_per_outer_fold"] == 14
+    assert h2_panel["exposure_audit"]["h2_image_payloads_opened_during_freeze"] is False
+    assert h2_panel["exposure_audit"]["h2_truth_payloads_opened_during_freeze"] is False
+    assert h2_panel["exposure_audit"]["h2_model_forwards_during_freeze"] == 0
+    assert not any(h2_panel["authority"].values())
+
+    h2_preoutcome_source = package["frozen_sources"]["powered_h2_r4_preoutcome_protocol"]
+    h2_preoutcome = _load(ROOT / h2_preoutcome_source["path"])
+    assert h2_preoutcome["status"] == "FROZEN_PREOUTCOME_NOT_AUTHORIZED"
+    assert h2_preoutcome["execution"]["total_rows"] == 4270
+    assert h2_preoutcome["execution"]["expected_total_model_forwards"] == 17080
+    assert h2_preoutcome["authorization_contract"]["current_authorized"] is False
+    assert not any(h2_preoutcome["authority"].values())
+    h2_preoutcome_tests_source = package["frozen_sources"]["powered_h2_r4_preoutcome_tests"]
+    h2_preoutcome_tests = _load(ROOT / h2_preoutcome_tests_source["path"])
+    assert h2_preoutcome_tests["status"] == "PASS"
+    assert h2_preoutcome_tests["tests_run"] == 4
+    assert h2_preoutcome_tests["failures"] == h2_preoutcome_tests["errors"] == 0
+    assert h2_preoutcome_tests["h2_image_payloads_opened_by_tests"] == 0
+    assert h2_preoutcome_tests["h2_truth_payloads_opened_by_tests"] == 0
+    assert h2_preoutcome_tests["h2_model_forwards_by_tests"] == 0
+    assert not any(h2_preoutcome_tests["authority"].values())
 
     shortlist_source = package["frozen_sources"]["primary_confirmation_shortlist"]
     shortlist = _load(ROOT / shortlist_source["path"])
@@ -159,6 +209,22 @@ def main() -> None:
     assert all(reproducibility["exact_matches"].values())
     assert not any(reproducibility["authority"].values())
 
+    leakage_source = package["frozen_sources"]["dynamic_router_outer_label_invariance"]
+    leakage = _load(ROOT / leakage_source["path"])
+    assert leakage["status"] == "PASS_NO_OUTER_TARGET_LEAKAGE_DETECTED"
+    assert leakage["held_out_rows_perturbed"] == leakage["held_out_rows_compared"] == 120
+    assert leakage["held_out_evaluation_values_changed"] == 120
+    assert leakage["held_out_model_outputs_exactly_equal"] is True
+    assert leakage["held_out_action_indices_exactly_equal"] is True
+    assert leakage["held_out_model_sha256_exactly_equal"] is True
+    assert leakage["held_out_thresholds_calibration_and_nested_training_exactly_equal"] is True
+    assert leakage["other_fold_models_changed"] == 5
+    assert not any(leakage["authority"].values())
+    for source in leakage["sources"].values():
+        source_path = Path(source["path"])
+        assert source_path.is_file(), source_path
+        assert _sha256(source_path) == source["sha256"], source_path
+
     scoring_source = package["frozen_sources"]["external_panel_r4_reject_only_scoring_protocol"]
     scoring = _load(ROOT / scoring_source["path"])
     assert scoring["status"] == "FROZEN_PRE_OUTCOME_NOT_AUTHORIZED"
@@ -170,7 +236,7 @@ def main() -> None:
     scoring_tests_source = package["frozen_sources"]["external_panel_r4_scoring_tests"]
     scoring_tests = _load(ROOT / scoring_tests_source["path"])
     assert scoring_tests["status"] == "PASS"
-    assert scoring_tests["tests_run"] == 4
+    assert scoring_tests["tests_run"] == 7
     assert scoring_tests["failures"] == scoring_tests["errors"] == 0
     assert scoring_tests["current_sealed_panel_members_opened_by_tests"] == 0
     assert not any(scoring_tests["authority"].values())
@@ -179,6 +245,7 @@ def main() -> None:
     assert readiness["method_and_run_matrix_frozen"] is True
     assert readiness["primary_r4_confirmation_plan_frozen"] is True
     assert readiness["dynamic_trainer_parity_verified"] is True
+    assert readiness["dynamic_trainer_outer_target_isolation_verified"] is True
     assert readiness["gpu_action_preflight_verified"] is True
     assert readiness["fresh_panel_manifest_available"] is True
     assert readiness["fresh_panel_independent_group_count"] == 20
@@ -189,6 +256,17 @@ def main() -> None:
     assert readiness["sealed_h2_current_corruption_count"] == 5
     assert readiness["sealed_h2_normative_corruption_coverage_satisfied"] is False
     assert readiness["sealed_h2_execution_authorized"] is False
+    assert readiness["powered_r4_final_protocol_frozen"] is True
+    assert readiness["powered_r4_final_protocol_independent_group_count"] == 70
+    assert readiness["powered_r4_final_protocol_normative_corruption_count"] == 20
+    assert readiness["powered_r4_final_protocol_normative_coverage_satisfied"] is True
+    assert readiness["powered_r4_final_protocol_execution_authorized"] is False
+    assert readiness["powered_r4_exact_panel_frozen"] is True
+    assert readiness["powered_r4_exact_panel_row_count"] == 4270
+    assert readiness["powered_r4_exact_panel_payloads_opened"] is False
+    assert readiness["powered_r4_preoutcome_runner_frozen"] is True
+    assert readiness["powered_r4_preoutcome_fail_closed_tests_passed"] is True
+    assert readiness["powered_r4_preoutcome_execution_authorized"] is False
     assert readiness["powered_authorized_panel_available"] is False
     assert readiness["fresh_before_only_feature_records_available"] is True
     assert readiness["fresh_native_r4_prediction_receipts_available"] is True
@@ -204,9 +282,10 @@ def main() -> None:
     assert readiness["ready_to_execute"] is False
     print(
         "PASS: R4-only primary confirmation, optional nine-run diagnostics, "
-        "GPU preflight, and the 20-group reject-only panel are hash-bound; "
-        "sealed H2 has 70 groups but only five frozen corruptions and no "
-        "execution authority; final admission remains closed"
+        "GPU preflight, outer-target isolation, and the 20-group reject-only "
+        "panel are hash-bound; E288-E290 freeze a powered 70-scene, "
+        "20-corruption, 4,270-row R4 final panel and target-free runner but "
+        "H2 has no execution authority; final admission remains closed"
     )
 
 

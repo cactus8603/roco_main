@@ -1,4 +1,6 @@
 from dataclasses import replace
+import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -7,6 +9,11 @@ from stablebridge.physical_repair.candidate_action_bank import (
     FrozenActionReceipt,
     OPTICAL_FLOW_ACTION_BANK,
     OPTICAL_FLOW_ACTION_BANK_HASH,
+    OPTICAL_FLOW_CAPACITY_ACTION_IDS,
+    OPTICAL_FLOW_CAPACITY_BANK,
+    OPTICAL_FLOW_CAPACITY_BANK_HASH,
+    OPTICAL_FLOW_CAPACITY_FAMILIES,
+    OPTICAL_FLOW_CAPACITY_SOURCE_MANIFEST_SHA256,
     OPTICAL_FLOW_MINIMAL_PILOT_ACTION_IDS,
     OPTICAL_FLOW_MINIMAL_PILOT_BANK,
     OPTICAL_FLOW_MINIMAL_PILOT_BANK_HASH,
@@ -112,6 +119,45 @@ def test_opened_candidate_bank_is_e278_three_family_four_control_set() -> None:
     assert OPTICAL_FLOW_OPENED_CANDIDATE_BANK_HASH == (
         "f112ec81c24cc9c5aac70d0ab5fc919c9dd127d2396a9dbb85c46501cada8070"
     )
+
+
+def test_e292_capacity_bank_is_the_hash_bound_nine_anchor_runtime_set() -> None:
+    expected = (
+        "CSB/OF/SEA-RAFT/action/V3-gaussian-s0p5",
+        "CSB/OF/SEA-RAFT/action/P1-gaussian-s1",
+        "CSB/OF/SEA-RAFT/action/R1-gaussian-s1p5",
+        "CSB/OF/SEA-RAFT/action/R2-gaussian-s2",
+        "CSB/OF/SEA-RAFT/action/R4-unsharp-a1p5",
+        "CSB/OF/SEA-RAFT/action/R5-joint-channel-percentile-s1",
+        "CSB/OF/SEA-RAFT/action/R6-joint-percentile-s5",
+        "CSB/OF/SEA-RAFT/action/P4-iters8",
+        "CSB/OF/SEA-RAFT/action/R7-iters12",
+    )
+    assert OPTICAL_FLOW_CAPACITY_ACTION_IDS == expected
+    assert tuple(OPTICAL_FLOW_CAPACITY_BANK) == expected
+    assert tuple(
+        action_id
+        for members in OPTICAL_FLOW_CAPACITY_FAMILIES.values()
+        for action_id in members
+    ) == expected
+    assert OPTICAL_NATIVE_ACTION_ID not in OPTICAL_FLOW_CAPACITY_BANK
+    assert OPTICAL_FLOW_CAPACITY_BANK_HASH == (
+        "eddd71535ed30b86428ce55291b71419c4b86eac0c08cf91d7bae466c50061ce"
+    )
+    manifest_path = (
+        Path(__file__).resolve().parents[2]
+        / "configs/stablebridge/optical_flow_capacity_9anchor_v1.json"
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert manifest["bank_hash"] == OPTICAL_FLOW_CAPACITY_BANK_HASH
+    assert manifest["source_manifest_sha256"] == (
+        OPTICAL_FLOW_CAPACITY_SOURCE_MANIFEST_SHA256
+    )
+    assert manifest["families"] == {
+        family: list(actions)
+        for family, actions in OPTICAL_FLOW_CAPACITY_FAMILIES.items()
+    }
+    assert manifest["authority"]["production_authority"] is False
 
 
 def test_candidate_bank_is_exposed_by_the_main_physical_repair_api() -> None:

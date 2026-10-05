@@ -371,8 +371,8 @@ def decoupled_uncertainty_flow_loss_v2(
     native_flow_predictions: Sequence[torch.Tensor],
     augmented_flow_predictions: Sequence[torch.Tensor],
     augmented_log_variances: Sequence[torch.Tensor],
-    ground_truth_flow: torch.Tensor,
-    native_valid: torch.Tensor,
+    ground_truth_flow: torch.Tensor | None,
+    native_valid: torch.Tensor | None,
     transformed_teacher_flow: torch.Tensor,
     consistency_valid: torch.Tensor,
     *,
@@ -385,16 +385,27 @@ def decoupled_uncertainty_flow_loss_v2(
     uncertainty = tuple(augmented_log_variances)
     if not native or len(augmented) != len(uncertainty) or not augmented:
         raise ValueError("flow and uncertainty sequences must be nonempty and aligned")
-    native_mask = _mask4(native_valid, ground_truth_flow)
     consistency_mask = _mask4(consistency_valid, transformed_teacher_flow)
     teacher = transformed_teacher_flow.detach()
 
-    task_terms = []
-    for prediction in native:
-        if prediction.shape != ground_truth_flow.shape:
-            raise ValueError("native prediction and ground truth shapes must match")
-        component = F.smooth_l1_loss(prediction, ground_truth_flow, reduction="none")
-        task_terms.append(component[native_mask.expand_as(component)].mean())
+    if (ground_truth_flow is None) != (native_valid is None):
+        raise ValueError("ground-truth flow and validity must both be present or absent")
+    if ground_truth_flow is None:
+        if policy.task_weight != 0.0:
+            raise ValueError("ground truth is required when task_weight is nonzero")
+        # Preserve a tensor-valued loss record without granting the missing
+        # label path any training role.  Native-only U0 uses this branch.
+        task = native[-1].sum() * 0.0
+    else:
+        assert native_valid is not None
+        native_mask = _mask4(native_valid, ground_truth_flow)
+        task_terms = []
+        for prediction in native:
+            if prediction.shape != ground_truth_flow.shape:
+                raise ValueError("native prediction and ground truth shapes must match")
+            component = F.smooth_l1_loss(prediction, ground_truth_flow, reduction="none")
+            task_terms.append(component[native_mask.expand_as(component)].mean())
+        task = _weighted_sequence_mean(task_terms, policy.gamma)
 
     ar_terms, uncertainty_terms = [], []
     for prediction, alpha in zip(augmented, uncertainty):
@@ -410,7 +421,6 @@ def decoupled_uncertainty_flow_loss_v2(
         nll = math.sqrt(2.0) * torch.exp(-0.5 * bounded_alpha) * discrepancy + 0.5 * bounded_alpha
         uncertainty_terms.append(nll[consistency_mask].mean())
 
-    task = _weighted_sequence_mean(task_terms, policy.gamma)
     augmentation = _weighted_sequence_mean(ar_terms, policy.gamma)
     uncertainty_loss = _weighted_sequence_mean(uncertainty_terms, policy.gamma)
     total = (

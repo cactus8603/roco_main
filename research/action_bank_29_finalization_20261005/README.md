@@ -2,7 +2,7 @@
 
 Date: 2026-10-05
 
-Status: `FROZEN_4_CONTROL_CANDIDATE_FINAL_VALIDATED_BANK_EMPTY`
+Status: `E292_9_ANCHOR_CAPACITY_BANK_INTEGRATED_FINAL_VALIDATED_BANK_EMPTY`
 
 ## Decision
 
@@ -21,6 +21,13 @@ The four controls are not yet validated final actions. E275--E278 repeatedly
 used the same E3 outer-OOF outcomes to prune controls, so the panel became
 opened development evidence despite the nested grouped training within each
 individual run. The final validated bank therefore remains empty.
+
+Separately, E292 evaluates cross-component capacity over KITTI, Sintel, and
+RoCo-Spring and freezes a four-family, nine-anchor opened-capacity bank. That
+bank is now exposed by `candidate_action_bank.py`, hash-bound in
+[`optical_flow_capacity_9anchor_v1.json`](../../configs/stablebridge/optical_flow_capacity_9anchor_v1.json),
+and consumable by the integrated uncertainty/flow trainer. It preserves a
+repair ceiling; it does not supersede the fresh selector-admission gates above.
 
 ## Evidence
 
@@ -193,8 +200,10 @@ current K-fold design and the required fresh nested grouped evaluation.
 The [fresh-validation work package](FRESH_VALIDATION_WORK_PACKAGE.json) retains
 the nine-run four-action matrix as an optional comprehensive diagnostic, while
 the primary admission path is now one predeclared nested-grouped R4-versus-native
-run. It remains explicitly not ready until an untouched powered panel,
-before-only features, and exact action outcomes are available.
+run. The reject-only panel's target-free features are ready and a powered H2
+method is now frozen, but execution remains not ready until E286 outcomes,
+phase-1 survival, H2 governance/user authorization, and H2 pre-outcome receipts
+are available.
 GPU availability is no longer a blocker: E283 ran native plus the four exact
 controls on one already-opened E3 row on an RTX 3090 and verified finite
 full-resolution outputs. CUDA is visible only outside the filesystem sandbox,
@@ -226,11 +235,19 @@ phase 1 and still requires powered confirmation. See the
 The [powered-panel options audit](POWERED_PANEL_OPTIONS_AUDIT.json) also checks
 the still-sealed KITTI H2 cohort using metadata only. Its 70 independent scenes
 meet the smallest 65-group planning threshold, but not the 136/607-group
-thresholds. Its existing E186 contract also has only five corruptions rather
-than the required 20, and its current execution authority is false. H2 therefore
-remains an option requiring explicit authorization and a separate pre-outcome
-action-bank protocol with normative coverage, not evidence that can be counted
-now.
+thresholds. Although the legacy E186 contract has only five corruptions, E288
+now freezes an action-bank-specific R4-only contract with all 20 normative
+corruptions, 70 scene groups, five outer folds and four inner folds. This closes
+the method-design gap, and E289 fixes the exact ordered 4,270-row population
+from existing JSON metadata without opening any image or truth payload. E290
+also freezes the four-forward/60-feature target-free GPU runner and passes three
+authorization-bypass tests without H2 access. None of these artifacts grants
+H2 access: E286 must first survive, existing
+H2 governance must authorize execution (or a versioned exception must be
+approved), and explicit user authorization is still required. See the
+[E288 protocol](../../experiments/E288_h2_r4_final_protocol_freeze_v1/README.md)
+the [E289 panel](../../experiments/E289_h2_r4_panel_freeze_v1/README.md), and
+the [E290 runner](../../experiments/E290_h2_r4_preoutcome_runner_v1/README.md).
 
 The generalized grouped trainer has also been checked for exact backward
 parity. E280 reproduces every one of the 1,200 E278 CTRL-FACT decisions and all
@@ -250,6 +267,14 @@ PYTHONDONTWRITEBYTECODE=1 \
 See the [E280 report](../../experiments/E280_dynamic_group_router_parity_v1/README.md).
 This proves the arbitrary-`K` implementation preserves the old six-fold
 behavior; it does not make E3 fresh or add admission authority.
+
+E287 additionally perturbs every teacher loss in one held-out outer fold and
+reruns the complete trainer. All 120 held-out model outputs, selected actions,
+thresholds, calibration state, and model bytes remain exactly equal, while all
+120 post-selection evaluation values and the five other legally trained fold
+models change. This is a direct falsification test for outer-target leakage;
+it likewise provides implementation evidence only. See the
+[E287 report](../../experiments/E287_dynamic_router_outer_leakage_test_v1/README.md).
 
 ## Remaining admission work
 

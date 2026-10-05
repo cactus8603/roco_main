@@ -19,6 +19,11 @@ from PIL import Image
 import torch
 from torch.utils.data import DataLoader, Dataset
 
+from stablebridge.physical_repair.candidate_action_bank import (
+    OPTICAL_FLOW_CAPACITY_BANK,
+    OPTICAL_NATIVE_ACTION_ID,
+    prepare_optical_pair_action,
+)
 from stablebridge.physical_repair.u2flow_augmentations import (
     U2FlowAugmentationProfileV1,
     apply_u2flow_recipe_v1,
@@ -111,6 +116,11 @@ def _chw_float(image: np.ndarray) -> torch.Tensor:
     return torch.from_numpy(np.ascontiguousarray(image.transpose(2, 0, 1))).float().div_(255.0)
 
 
+def _pair_float(first: np.ndarray, second: np.ndarray) -> np.ndarray:
+    pair = np.stack((first.transpose(2, 0, 1), second.transpose(2, 0, 1)))
+    return np.ascontiguousarray(pair, dtype=np.float32) / np.float32(255.0)
+
+
 def _chw_bool(mask: np.ndarray) -> torch.Tensor:
     return torch.from_numpy(np.ascontiguousarray(mask[None])).bool()
 
@@ -136,6 +146,7 @@ class SintelU0UncertaintyDatasetV1(Dataset[dict[str, object]]):
         validation_appearance_probe: bool = True,
         allow_fit_ground_truth: bool = False,
         allow_spatial_augmentation: bool = False,
+        action_id: str = OPTICAL_NATIVE_ACTION_ID,
     ) -> None:
         if not isinstance(manifest, U2FlowTrainingManifestV1):
             raise ValueError("manifest must be a typed U2Flow training manifest")
@@ -178,6 +189,8 @@ class SintelU0UncertaintyDatasetV1(Dataset[dict[str, object]]):
         self.allow_spatial_augmentation = allow_spatial_augmentation
         self.rows = rows
         self.epoch = 0
+        self.action_id = OPTICAL_NATIVE_ACTION_ID
+        self.set_action_id(action_id)
 
     def __len__(self) -> int:
         return len(self.rows)
@@ -186,6 +199,13 @@ class SintelU0UncertaintyDatasetV1(Dataset[dict[str, object]]):
         if isinstance(epoch, bool) or not isinstance(epoch, int) or epoch < 0:
             raise ValueError("epoch must be a nonnegative integer")
         self.epoch = epoch
+
+    def set_action_id(self, action_id: str) -> None:
+        """Select one batch-homogeneous E292 action for the next loader epoch."""
+
+        if action_id != OPTICAL_NATIVE_ACTION_ID and action_id not in OPTICAL_FLOW_CAPACITY_BANK:
+            raise ValueError("training action must be native or an E292 capacity-bank anchor")
+        self.action_id = action_id
 
     def _ground_truth_paths(self, row: U2FlowTrainingRowV1) -> tuple[Path, Path, Path]:
         first = Path(row.base_inputs[0].path)
@@ -242,6 +262,17 @@ class SintelU0UncertaintyDatasetV1(Dataset[dict[str, object]]):
         augmented = apply_u2flow_recipe_v1(
             first, second, recipe, profile=selected_profile
         )
+        prepared_native = prepare_optical_pair_action(
+            _pair_float(native_first, native_second), self.action_id,
+        )
+        prepared_augmented = prepare_optical_pair_action(
+            _pair_float(augmented.first, augmented.second), self.action_id,
+        )
+        if (
+            prepared_native.matcher_iterations_override
+            != prepared_augmented.matcher_iterations_override
+        ):
+            raise RuntimeError("native/augmented action materialization drift")
 
         erase_mask = np.zeros((height, width), dtype=bool)
         erasing = recipe.last_frame_erasing
@@ -292,8 +323,10 @@ class SintelU0UncertaintyDatasetV1(Dataset[dict[str, object]]):
             "group_id": row.group_id,
             "split_role": row.split_role.value,
             "render_pass": row.render_pass,
-            "native_frames": torch.stack((_chw_float(native_first), _chw_float(native_second))),
-            "augmented_frames": torch.stack((_chw_float(augmented.first), _chw_float(augmented.second))),
+            "native_frames": torch.from_numpy(prepared_native.images.copy()),
+            "augmented_frames": torch.from_numpy(prepared_augmented.images.copy()),
+            "action_id": self.action_id,
+            "matcher_iterations_override": prepared_native.matcher_iterations_override,
             "augmentation_valid": _chw_bool(augmented.valid_support),
             "erasure_mask": _chw_bool(erase_mask),
             "ground_truth_flow": flow_tensor,
@@ -384,6 +417,7 @@ def build_sintel_u0_dataset_from_config_v1(
     validation_appearance_probe: bool = True,
     allow_fit_ground_truth: bool = False,
     allow_spatial_augmentation: bool = False,
+    action_id: str = OPTICAL_NATIVE_ACTION_ID,
 ) -> SintelU0UncertaintyDatasetV1:
     """Load the checked JSON config, inventory its RGB data, and bind one role."""
 
@@ -411,6 +445,7 @@ def build_sintel_u0_dataset_from_config_v1(
         validation_appearance_probe=validation_appearance_probe,
         allow_fit_ground_truth=allow_fit_ground_truth,
         allow_spatial_augmentation=allow_spatial_augmentation,
+        action_id=action_id,
     )
 
 
@@ -441,6 +476,7 @@ def build_sintel_integrated_dataset_from_config_v2(
     *,
     role: U2FlowSceneRoleV1 | str,
     validation_appearance_probe: bool = True,
+    action_id: str = OPTICAL_NATIVE_ACTION_ID,
 ) -> SintelU0UncertaintyDatasetV1:
     """Build labelled native views plus full spatial consistency metadata.
 
@@ -455,6 +491,31 @@ def build_sintel_integrated_dataset_from_config_v2(
         validation_appearance_probe=validation_appearance_probe,
         allow_fit_ground_truth=True,
         allow_spatial_augmentation=True,
+        action_id=action_id,
+    )
+
+
+def build_sintel_recurrent_u0_dataset_from_config_v2(
+    config_path: str | Path,
+    *,
+    role: U2FlowSceneRoleV1 | str,
+    validation_appearance_probe: bool = True,
+) -> SintelU0UncertaintyDatasetV1:
+    """Build recurrent U0 views without opening fit-split flow labels.
+
+    Fit rows expose native/augmented pairs and exact spatial transport only.
+    Held-out roles retain Sintel ground truth for evaluation, never as a U0
+    optimization target.
+    """
+
+    return build_sintel_u0_dataset_from_config_v1(
+        config_path,
+        role=role,
+        include_ground_truth=None,
+        validation_appearance_probe=validation_appearance_probe,
+        allow_fit_ground_truth=False,
+        allow_spatial_augmentation=True,
+        action_id=OPTICAL_NATIVE_ACTION_ID,
     )
 
 
@@ -463,6 +524,7 @@ __all__ = [
     "build_sintel_u0_dataset_from_config_v1",
     "build_sintel_u1_dataset_from_config_v1",
     "build_sintel_integrated_dataset_from_config_v2",
+    "build_sintel_recurrent_u0_dataset_from_config_v2",
     "collate_sintel_u0_samples_v1",
     "make_sintel_u0_dataloader_v1",
     "photometric_only_u0_profile_v1",

@@ -227,6 +227,7 @@ class SintelU0UncertaintyDatasetV1(Dataset[dict[str, object]]):
         )
         self.sam_manifest: Mapping[str, object] | None = None
         self.sam_records: Mapping[str, object] = {}
+        self.sam_key_object_root: Path | None = None
         if self.sam_full_segmentation_root is not None:
             manifest_path = self.sam_full_segmentation_root / "manifest.json"
             if not manifest_path.is_file():
@@ -256,6 +257,11 @@ class SintelU0UncertaintyDatasetV1(Dataset[dict[str, object]]):
                 )
             self.sam_manifest = manifest
             self.sam_records = records
+            key_object_root = manifest.get("key_object_root")
+            if key_object_root is not None:
+                self.sam_key_object_root = Path(str(key_object_root)).resolve()
+                if not self.sam_key_object_root.is_dir():
+                    raise FileNotFoundError(self.sam_key_object_root)
         self.epoch = 0
         self.action_id = OPTICAL_NATIVE_ACTION_ID
         self.set_action_id(action_id)
@@ -303,12 +309,47 @@ class SintelU0UncertaintyDatasetV1(Dataset[dict[str, object]]):
             raise ValueError(f"SAM full-segmentation digest drift: {target}")
         return _read_segment_ids(target, expected_hw)
 
+    def _sam_key_object_masks(
+        self, row: U2FlowTrainingRowV1, expected_hw: tuple[int, int],
+    ) -> np.ndarray | None:
+        """Load exact packed U²Flow key objects when the SAM manifest has them."""
+
+        if self.sam_key_object_root is None:
+            return None
+        source = Path(row.base_inputs[0].path).resolve()
+        relative = source.relative_to(Path(self.manifest.root).resolve())
+        record = self.sam_records.get(str(relative))
+        if not isinstance(record, Mapping):
+            raise ValueError(f"SAM manifest record is invalid: {relative}")
+        target = self.sam_key_object_root / relative.with_suffix(".npz")
+        if not target.is_file():
+            raise FileNotFoundError(target)
+        expected_sha = record.get("key_objects_sha256")
+        if not isinstance(expected_sha, str) or _sha256_path(target) != expected_sha:
+            raise ValueError(f"SAM key-object digest drift: {target}")
+        with np.load(target, allow_pickle=False) as payload:
+            if set(payload.files) != {"packed", "height", "width", "count"}:
+                raise ValueError(f"SAM key-object fields drift: {target}")
+            height = int(payload["height"])
+            width = int(payload["width"])
+            count = int(payload["count"])
+            packed = np.asarray(payload["packed"], dtype=np.uint8)
+        if (height, width) != expected_hw or count < 0:
+            raise ValueError(f"SAM key-object geometry drift: {target}")
+        expected_shape = (count, height, (width + 7) // 8)
+        if packed.shape != expected_shape:
+            raise ValueError(f"SAM key-object packed shape drift: {target}")
+        return np.unpackbits(
+            packed, axis=-1, count=width, bitorder="little",
+        ).astype(bool, copy=False)
+
     def __getitem__(self, index: int) -> dict[str, object]:
         row = self.rows[index]
         expected_hw = (row.base_inputs[0].height, row.base_inputs[0].width)
         first = _read_rgb(row.base_inputs[0].path, expected_hw)
         second = _read_rgb(row.base_inputs[1].path, expected_hw)
         full_sam_segment_ids = self._sam_segment_ids(row, expected_hw)
+        full_sam_key_objects = self._sam_key_object_masks(row, expected_hw)
         fusion_previous = None
         if row.fusion_context_enabled:
             if row.fusion_context is None:
@@ -358,6 +399,19 @@ class SintelU0UncertaintyDatasetV1(Dataset[dict[str, object]]):
                 full_sam_segment_ids[top : top + height, left : left + width]
             )
         )
+        sam_key_object_mask: np.ndarray | None = None
+        sam_key_object_present = False
+        if full_sam_key_objects is not None:
+            if full_sam_key_objects.shape[0]:
+                selected_object = int(recipe.seed % full_sam_key_objects.shape[0])
+                sam_key_object_mask = np.ascontiguousarray(
+                    full_sam_key_objects[
+                        selected_object, top : top + height, left : left + width
+                    ]
+                )
+                sam_key_object_present = bool(sam_key_object_mask.any())
+            else:
+                sam_key_object_mask = np.zeros((height, width), dtype=bool)
         fusion_frames = None
         if fusion_previous is not None:
             native_previous = np.ascontiguousarray(
@@ -457,6 +511,9 @@ class SintelU0UncertaintyDatasetV1(Dataset[dict[str, object]]):
             result["fusion_frames"] = fusion_frames
         if sam_segment_ids is not None:
             result["sam_segment_ids"] = torch.from_numpy(sam_segment_ids[None]).long()
+        if sam_key_object_mask is not None:
+            result["sam_key_object_mask"] = _chw_bool(sam_key_object_mask)
+            result["sam_key_object_present"] = sam_key_object_present
         return result
 
 

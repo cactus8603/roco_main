@@ -1,4 +1,12 @@
-# RoCo / StableBridge
+# RoCo — CVPR mainline
+
+> **Project boundary.** This repository is the post-submission RoCo CVPR
+> mainline. The frozen StableBridge submission is a separate predecessor; work
+> added after that submission—including the action bank, selector,
+> U0/U1/U2 uncertainty training, and SAM experiments—belongs to RoCo. The
+> existing `stablebridge.*` Python import path is retained only for frozen
+> artifact and experiment compatibility. It must not be used to infer project
+> ownership or to move current RoCo work back into the StableBridge line.
 
 RoCo 是一個針對 optical flow 與 stereo correspondence 的研究型框架。核心問題不是單純
 增加更多 restoration tools，而是讓每個 action family 先提出適合的 strength／output
@@ -289,6 +297,10 @@ allocator cache 補到 88% 高水位並保留至少 3 GiB library headroom；每
 目標降低 5%，最低 65%，避免保留策略本身形成 OOM retry loop。
 
 SAM 版 U2 使用獨立 config／run directory，不會把新 objective 插入已開始的 U2 checkpoint：
+
+SAM 2.1 Hiera-Large 的跨伺服器環境設定、100-frame key-object quality sweep、
+多 GPU sharding、續跑與搬回本機流程，整理在
+[`docs/SAM21_REMOTE_PREPROCESSING.md`](docs/SAM21_REMOTE_PREPROCESSING.md)。
 
 ```bash
 PYTHONPATH=src /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python \

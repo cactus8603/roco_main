@@ -69,7 +69,15 @@ class CudaMemoryReservationV1:
         retry_count: int | None = None,
     ) -> None:
         self.policy = policy
-        self.device = device
+        # ``torch.device("cuda")`` deliberately leaves the index implicit,
+        # but CUDA APIs such as ``set_device`` require a concrete logical
+        # index.  The scheduler exposes exactly one physical GPU through
+        # CUDA_VISIBLE_DEVICES, so logical device zero is the correct default.
+        self.device = (
+            torch.device("cuda", 0)
+            if device.type == "cuda" and device.index is None
+            else device
+        )
         if retry_count is None:
             raw_retry = os.environ.get("STABLEBRIDGE_RESOURCE_RETRY_COUNT", "0")
             try:

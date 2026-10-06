@@ -26,6 +26,15 @@ def test_cpu_guard_is_inert_and_retry_target_is_bounded():
     }
 
 
+def test_implicit_cuda_device_is_normalized_to_logical_zero():
+    guard = CudaMemoryReservationV1(
+        CudaMemoryReservationPolicyV1(enabled=False),
+        torch.device("cuda"),
+        retry_count=0,
+    )
+    assert guard.device == torch.device("cuda:0")
+
+
 def test_memory_policy_requires_exact_serialized_fields():
     value = {
         "enabled": True,

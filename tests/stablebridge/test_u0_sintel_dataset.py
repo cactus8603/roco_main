@@ -272,6 +272,7 @@ def test_integrated_dataset_loads_hash_bound_sam_full_segmentation(
     _populate(sintel_root)
     manifest = _manifest(sintel_root)
     sam_root = tmp_path / "sam-fullseg"
+    key_root = tmp_path / "sam-key-objects"
     records = {}
     for row in manifest.rows:
         if row.split_role.value != "fit":
@@ -283,8 +284,19 @@ def test_integrated_dataset_loads_hash_bound_sam_full_segmentation(
         target = sam_root / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         Image.fromarray(labels).save(target)
+        key_target = key_root / relative.with_suffix(".npz")
+        key_target.parent.mkdir(parents=True, exist_ok=True)
+        key_masks = np.ones((1, 8, 12), dtype=bool)
+        np.savez_compressed(
+            key_target,
+            packed=np.packbits(key_masks, axis=-1, bitorder="little"),
+            height=np.int32(8), width=np.int32(12), count=np.int32(1),
+        )
         records[str(relative)] = {
             "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
+            "key_objects_sha256": hashlib.sha256(
+                key_target.read_bytes()
+            ).hexdigest(),
         }
     checkpoint_sha = "a" * 64
     (sam_root / "manifest.json").write_text(json.dumps({
@@ -292,6 +304,7 @@ def test_integrated_dataset_loads_hash_bound_sam_full_segmentation(
         "complete": True,
         "source_root": str(sintel_root.resolve()),
         "sam_checkpoint_sha256": checkpoint_sha,
+        "key_object_root": str(key_root.resolve()),
         "records": records,
     }), encoding="utf-8")
     dataset = SintelU0UncertaintyDatasetV1(
@@ -306,6 +319,9 @@ def test_integrated_dataset_loads_hash_bound_sam_full_segmentation(
     assert sample["sam_segment_ids"].shape == (1, 6, 8)
     assert sample["sam_segment_ids"].dtype is torch.int64
     assert int(sample["sam_segment_ids"].max()) == 1
+    assert sample["sam_key_object_mask"].shape == (1, 6, 8)
+    assert bool(sample["sam_key_object_mask"].all())
+    assert sample["sam_key_object_present"] is True
 
     target = sam_root / next(iter(records))
     target.write_bytes(b"corrupt")

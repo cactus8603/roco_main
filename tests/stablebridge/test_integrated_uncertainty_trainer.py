@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 import copy
+from dataclasses import asdict
 import json
 from pathlib import Path
 
@@ -20,6 +21,9 @@ from stablebridge.physical_repair.candidate_action_bank import (
     OPTICAL_FLOW_CAPACITY_BANK_HASH,
     OPTICAL_FLOW_CAPACITY_SOURCE_MANIFEST_SHA256,
     OPTICAL_NATIVE_ACTION_ID,
+)
+from stablebridge.physical_repair.sam_semantic_augmentation import (
+    SamSemanticAugmentationPolicyV1,
 )
 
 
@@ -50,6 +54,8 @@ class TinyIntegratedDataset(Dataset):
         augmented = (native * 0.9).clamp(0, 1)
         truth = torch.stack((native[0, 0] * 0.1, native[0, 1] * -0.1))
         result = {
+            "row_id": f"{self.split}-row-{index}",
+            "scene_id": f"scene-{index % 2}",
             "native_frames": native,
             "augmented_frames": augmented,
             "augmentation_valid": torch.ones(1, 4, 5, dtype=torch.bool),
@@ -66,6 +72,8 @@ class TinyIntegratedDataset(Dataset):
             result["fusion_frames"] = torch.cat((native[:1], native), dim=0)
         if self.sam_context:
             result["sam_segment_ids"] = torch.ones(1, 4, 5, dtype=torch.int64)
+            result["sam_key_object_mask"] = torch.ones(1, 4, 5, dtype=torch.bool)
+            result["sam_key_object_present"] = True
         return result
 
 
@@ -255,6 +263,42 @@ def test_sam_homography_requires_traced_dataset_and_runs_in_flow_phase(tmp_path)
     assert losses.sam_candidate_regions >= losses.sam_fitted_regions >= 0
 
 
+def test_sam_semantic_augmentation_prefers_exact_key_objects(tmp_path):
+    value = _config(tmp_path / "sam-semantic-u2").serializable()
+    value["sam_semantic_augmentation"] = asdict(
+        SamSemanticAugmentationPolicyV1(
+            enabled=True, activation_epoch=0, cache_size=2,
+            objects_per_batch=1,
+        )
+    )
+    value["dataset"]["kwargs"].update({
+        "sam_context": True,
+        "sam_full_segmentation_root": "/not-read-by-test-double",
+        "sam_checkpoint_sha256": "a" * 64,
+    })
+    trainer = IntegratedUncertaintyTrainerV2(
+        IntegratedTrainerConfigV2.from_mapping(value), device="cpu",
+    )
+    raw = next(iter(trainer._loader(trainer.fit_dataset, training=True, epoch=0)))
+    batch = trainer._move(raw)
+    first, _native, _base = trainer._forward_loss(
+        batch, augmentation_enabled=True, phase="joint",
+        semantic_augmentation_enabled=False,
+        semantic_cache_update_enabled=True,
+    )
+    assert first.sam_semantic_objects == 0
+    assert trainer.sam_semantic_cache is not None
+    assert trainer.sam_semantic_cache.ready
+    second, _native, _base = trainer._forward_loss(
+        batch, augmentation_enabled=True, phase="joint",
+        semantic_augmentation_enabled=True,
+        semantic_cache_update_enabled=True,
+    )
+    assert second.sam_semantic_objects == 2
+    assert second.sam_semantic_object_pixels > 0
+    assert torch.isfinite(second.sam_semantic)
+
+
 def test_optional_three_frame_fusion_reports_separate_validation_metrics(tmp_path):
     value = _config(tmp_path / "fusion-validation").serializable()
     value["dataset"]["kwargs"]["fusion_context"] = True
@@ -381,6 +425,46 @@ def test_u2_loads_completed_native_head_only_initialization(tmp_path):
         torch.equal(parameter, torch.full_like(parameter, 0.375))
         for parameter in target.model.recurrent_head.uncertainty_head.state_dict().values()
     )
+
+
+def test_new_stage_warm_starts_full_model_with_traced_lineage(tmp_path):
+    source = IntegratedUncertaintyTrainerV2(
+        _config(tmp_path / "source-full"), device="cpu",
+    )
+    assert source.train() == 0
+    payload = torch.load(source.best_path, map_location="cpu", weights_only=False)
+    for key in tuple(payload["model"]):
+        payload["model"][key] = torch.full_like(payload["model"][key], 0.375)
+    torch.save(payload, source.best_path)
+
+    target_value = _config(tmp_path / "target-full").serializable()
+    target_value["model_initialization_checkpoint"] = str(source.best_path)
+    target = IntegratedUncertaintyTrainerV2(
+        IntegratedTrainerConfigV2.from_mapping(target_value), device="cpu",
+    )
+    assert target.initialization_lineage is None
+    assert target.refiner_initialization_lineage is None
+    assert target.model_initialization_lineage is not None
+    assert target.model_initialization_lineage["checkpoint"] == str(source.best_path)
+    assert all(
+        torch.equal(parameter, torch.full_like(parameter, 0.375))
+        for parameter in target.model.state_dict().values()
+    )
+    target.save()
+    checkpoint = torch.load(target.latest_path, map_location="cpu", weights_only=False)
+    assert checkpoint["model_initialization_lineage"] == (
+        target.model_initialization_lineage
+    )
+    resumed = IntegratedUncertaintyTrainerV2(target.config, device="cpu")
+    resumed.resume(target.latest_path)
+
+
+def test_full_model_initialization_rejects_ambiguous_partial_sources(tmp_path):
+    value = _config(tmp_path / "ambiguous-initialization").serializable()
+    value["model_initialization_checkpoint"] = str(tmp_path / "full.pt")
+    value["uncertainty_initialization_checkpoint"] = str(tmp_path / "u0.pt")
+    with pytest.raises(ValueError, match="cannot be combined"):
+        IntegratedTrainerConfigV2.from_mapping(value)
 
 
 def test_u2_loads_matching_u1_and_alternates_disjoint_gradient_phases(tmp_path):
@@ -568,3 +652,128 @@ def test_action_bank_cycle_drives_materialization_and_matcher_iterations(tmp_pat
     assert checkpoint["action_bank_lineage"]["bank_hash"] == (
         OPTICAL_FLOW_CAPACITY_BANK_HASH
     )
+
+
+def test_joint_decoupled_u2_updates_flow_and_uncertainty_in_every_step(tmp_path):
+    source = IntegratedUncertaintyTrainerV2(
+        _config(tmp_path / "joint-source"), device="cpu",
+    )
+    assert source.train() == 0
+
+    value = _config(tmp_path / "joint-target").serializable()
+    value["model_initialization_checkpoint"] = str(source.best_path)
+    value["u2_schedule"] = {"mode": "joint_decoupled"}
+    value["gradient_diagnostics"] = {
+        "enabled": True,
+        "every_steps": 1,
+        "maximum_parameter_elements": 100_000,
+        "epsilon": 1e-12,
+    }
+    trainer = IntegratedUncertaintyTrainerV2(
+        IntegratedTrainerConfigV2.from_mapping(value), device="cpu",
+    )
+
+    phase, round_index = trainer._configure_training_phase(0)
+    assert (phase, round_index) == ("joint", 0)
+    assert all(parameter.requires_grad for parameter in trainer.model.parameters())
+
+    raw = next(iter(trainer._loader(trainer.fit_dataset, training=True, epoch=0)))
+    losses, _native, _base = trainer._forward_loss(
+        trainer._move(raw), augmentation_enabled=True, phase=phase,
+    )
+    losses.total.backward()
+    assert any(
+        parameter.grad is not None and float(parameter.grad.abs().sum()) > 0.0
+        for parameter in trainer.model.recurrent_head.uncertainty_head.parameters()
+    )
+    assert any(
+        parameter.grad is not None and float(parameter.grad.abs().sum()) > 0.0
+        for parameter in trainer.model.recurrent_head.refinement_head.parameters()
+    )
+    assert any(
+        parameter.grad is not None and float(parameter.grad.abs().sum()) > 0.0
+        for parameter in trainer.model.network.parameters()
+    )
+    trainer.optimizer.zero_grad(set_to_none=True)
+
+    assert trainer.train() == 0
+    rows = [json.loads(line) for line in trainer.metrics_path.read_text().splitlines()]
+    assert {
+        row.get("phase") for row in rows if row.get("event") == "train_step"
+    } == {"joint"}
+    steps = [row for row in rows if row.get("event") == "train_step"]
+    assert all(row["gradient_norm_task"] > 0.0 for row in steps)
+    assert all(row["gradient_norm_uncertainty"] > 0.0 for row in steps)
+    assert all("gradient_conflict_count" in row for row in steps)
+    assert all(
+        row["gradient_diagnostic_scope"] == "current_microbatch_before_backward"
+        for row in steps
+    )
+    assert all(row["optimizer_gradient_accumulation_steps"] == 1 for row in steps)
+    assert all(
+        row["gradient_diagnostic_parameter_elements"] > 0 for row in steps
+    )
+
+
+def test_balanced_batches_interleave_actions_within_each_epoch(tmp_path):
+    value = _config(tmp_path / "balanced-actions").serializable()
+    value["dataset"]["kwargs"]["length"] = 4
+    value["training"]["batch_size"] = 1
+    value["action_bank"] = {
+        "mode": "balanced_batches",
+        "action_ids": [
+            OPTICAL_NATIVE_ACTION_ID,
+            "CSB/OF/SEA-RAFT/action/P4-iters8",
+        ],
+        "validation_action_id": OPTICAL_NATIVE_ACTION_ID,
+        "bank_hash": OPTICAL_FLOW_CAPACITY_BANK_HASH,
+        "source_manifest_sha256": OPTICAL_FLOW_CAPACITY_SOURCE_MANIFEST_SHA256,
+    }
+    value["action_shadow_probe"] = {
+        "enabled": True,
+        "every_epochs": 1,
+        "maximum_batches": 2,
+        "bootstrap_repetitions": 100,
+        "confidence_level": 0.95,
+        "seed": 17,
+    }
+    trainer = IntegratedUncertaintyTrainerV2(
+        IntegratedTrainerConfigV2.from_mapping(value), device="cpu",
+    )
+    assert trainer.train() == 0
+    rows = [json.loads(line) for line in trainer.metrics_path.read_text().splitlines()]
+    steps = [row for row in rows if row.get("event") == "train_step"]
+    assert {row["epoch"] for row in steps} == {0}
+    assert {row["action_id"] for row in steps} == {
+        OPTICAL_NATIVE_ACTION_ID,
+        "CSB/OF/SEA-RAFT/action/P4-iters8",
+    }
+    assert {
+        row["action_id"]: row["matcher_iterations"] for row in steps
+    } == {
+        OPTICAL_NATIVE_ACTION_ID: 1,
+        "CSB/OF/SEA-RAFT/action/P4-iters8": 8,
+    }
+    shadow = [row for row in rows if row.get("event") == "action_shadow_probe"]
+    assert {row["action_id"] for row in shadow} == {
+        OPTICAL_NATIVE_ACTION_ID,
+        "CSB/OF/SEA-RAFT/action/P4-iters8",
+    }
+    assert all(row["case_count"] == 2 and row["scene_count"] == 2 for row in shadow)
+    assert all(row["authorized_for_selector_training"] is False for row in shadow)
+    assert all(row["multiple_comparison_correction"] == "bonferroni" for row in shadow)
+    assert all(row["familywise_confidence_level"] == 0.95 for row in shadow)
+    assert all(row["hypothesis_count"] == 1 for row in shadow)
+    assert all("mean_action_case_epe" in row for row in shadow)
+    assert all("harmed_case_fraction" in row for row in shadow)
+    case_rows = [
+        json.loads(line)
+        for line in trainer.action_shadow_path.read_text().splitlines()
+    ]
+    assert len(case_rows) == 4
+    assert all(row["authorized_for_selector_training"] is False for row in case_rows)
+    assert all(row["context_is_outcome_blind"] is True for row in case_rows)
+    assert all(row["context_requires_ground_truth"] is False for row in case_rows)
+    assert all(row["context_source_action_id"] == OPTICAL_NATIVE_ACTION_ID for row in case_rows)
+    assert all("native_log_scale_mean" in row for row in case_rows)
+    assert all("native_photometric_l1_mean" in row for row in case_rows)

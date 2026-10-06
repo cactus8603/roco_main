@@ -116,8 +116,11 @@ SAM_MASK_ROOT/
 └── manifest.json
 ```
 
-正式 mask manifest 必須覆蓋完整 2,128 張 Sintel RGB、`inventory_truncated=false`，
-且至少產生 100 個 key objects。若 masks 是從別的檔案系統搬來，請依
+正式 mask manifest 必須覆蓋完整 2,128 張 Sintel RGB、`inventory_truncated=false`。
+目前 v2 會優先使用 exact key objects；不足時，會依每個訓練 crop 從 full
+segmentation 選出可用物件，因此 exact key-object 數量只作為品質診斷，不再是啟動門檻。
+launcher 會用真實訓練資料確認至少能填滿 100-object semantic cache。若 masks
+是從別的檔案系統搬來，請依
 [`SAM21_REMOTE_PREPROCESSING.md`](SAM21_REMOTE_PREPROCESSING.md) 的方式，以原參數
 重跑 generator 發布新的絕對路徑 manifest；不要直接手改 JSON。
 
@@ -152,10 +155,15 @@ TORCH_HOME="${TORCH_HOME_DIR}" \
 training_contract.u2_schedule           = joint_decoupled
 training_contract.action_schedule       = balanced_batches
 training_contract.sam_semantic_enabled  = true
+training_contract.fallback_to_full_segmentation = true
 training_contract.homography_enabled    = false
 sam21.frame_count                        = 2128
-sam21.key_object_count                   >= 100
+sam_semantic_preflight.state             = passed
+sam_semantic_preflight.usable_objects    = 100
 ```
+
+`sam21.key_object_count` 仍會列在報告中，但 v2 不要求它大於等於 100；
+真正的啟動條件是上述 crop-aware semantic preflight 能填滿 cache。
 
 ## 6. 正式啟動與續跑
 

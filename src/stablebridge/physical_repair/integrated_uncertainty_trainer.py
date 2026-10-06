@@ -1417,6 +1417,15 @@ class IntegratedUncertaintyTrainerV2:
                     )
                 if object_present.shape != (segment_ids.shape[0],):
                     raise ValueError("SAM key-object presence shape drift")
+                if semantic_policy.fallback_to_full_segmentation:
+                    fallback_masks, fallback_present = select_sam_object_masks_v1(
+                        segment_ids, policy=semantic_policy,
+                    )
+                    missing = ~object_present
+                    object_masks = torch.where(
+                        missing[:, None, None, None], fallback_masks, object_masks,
+                    )
+                    object_present = object_present | (missing & fallback_present)
             else:
                 object_masks, object_present = select_sam_object_masks_v1(
                     segment_ids, policy=semantic_policy,
@@ -2169,6 +2178,19 @@ class IntegratedUncertaintyTrainerV2:
         self.optimizer.zero_grad(set_to_none=True)
         for epoch in range(self.epoch, self.options.epochs):
             phase, round_index = self._configure_training_phase(epoch)
+            semantic_policy = self.config.sam_semantic_augmentation
+            if (
+                semantic_policy.enabled
+                and semantic_policy.activation_epoch > 0
+                and epoch >= semantic_policy.activation_epoch
+                and self.sam_semantic_cache is not None
+                and not self.sam_semantic_cache.ready
+            ):
+                raise RuntimeError(
+                    "SAM semantic cache was not filled before its activation "
+                    f"epoch: {self.sam_semantic_cache.count}/"
+                    f"{semantic_policy.cache_size} objects"
+                )
             self.optimizer.zero_grad(set_to_none=True)
             loader = self._loader(self.fit_dataset, training=True, epoch=epoch)
             for batch_index, raw in enumerate(loader):

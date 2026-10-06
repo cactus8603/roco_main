@@ -178,11 +178,6 @@ def validate_sam21_masks(
             "SAM2.1 output is incomplete; "
             f"missing_full={missing_full}, missing_key={missing_key}"
         )
-    if key_object_count < EXPECTED_MINIMUM_KEY_OBJECTS:
-        raise ValueError(
-            "SAM2.1 masks contain too few key objects to fill the semantic "
-            f"cache: {key_object_count} < {EXPECTED_MINIMUM_KEY_OBJECTS}"
-        )
     return full_root, {
         "manifest": str(manifest_path),
         "manifest_sha256": _sha256(manifest_path),
@@ -191,6 +186,52 @@ def validate_sam21_masks(
         "key_object_count": key_object_count,
         "nonempty_frames": nonempty_frames,
         "sam_checkpoint_sha256": SAM21_CHECKPOINT_SHA256,
+    }
+
+
+def _semantic_input_preflight(config: IntegratedTrainerConfigV2) -> dict[str, Any]:
+    """Prove that exact plus full-seg fallback masks can fill the cache."""
+
+    from .sam_semantic_augmentation import select_sam_object_masks_v1
+    from .u0_sintel_dataset import build_sintel_integrated_dataset_from_config_v2
+
+    policy = config.sam_semantic_augmentation
+    if not policy.enabled:
+        raise ValueError("SAM2.1 mainline requires semantic augmentation")
+    dataset = build_sintel_integrated_dataset_from_config_v2(
+        role=config.dataset["fit_split"], **dict(config.dataset["kwargs"]),
+    )
+    usable = 0
+    exact = 0
+    fallback = 0
+    checked = 0
+    for sample in dataset:
+        checked += 1
+        if bool(sample.get("sam_key_object_present", False)):
+            exact += 1
+            usable += 1
+        elif policy.fallback_to_full_segmentation:
+            segment_ids = sample.get("sam_segment_ids")
+            if segment_ids is None:
+                raise ValueError("SAM semantic preflight is missing segment ids")
+            _mask, present = select_sam_object_masks_v1(
+                segment_ids[None], policy=policy,
+            )
+            if bool(present.item()):
+                fallback += 1
+                usable += 1
+        if usable >= policy.cache_size:
+            break
+    if usable < policy.cache_size:
+        raise ValueError(
+            "SAM2.1 fit split cannot fill the semantic cache: "
+            f"{usable}/{policy.cache_size} usable objects"
+        )
+    return {
+        "state": "passed", "checked_fit_samples": checked,
+        "usable_objects": usable, "exact_objects": exact,
+        "fallback_objects": fallback, "required_objects": policy.cache_size,
+        "fallback_to_full_segmentation": policy.fallback_to_full_segmentation,
     }
 
 
@@ -277,7 +318,7 @@ def prepare_portable_sam21_training(
     )
     training_template_path = repository_root / (
         "configs/stablebridge/"
-        "u2_sintel_searaft_action_bank_joint_sam21_nohg_v1.json"
+        "u2_sintel_searaft_action_bank_joint_sam21_nohg_v2.json"
     )
     data_config = _json(data_template_path)
     data_config["root"] = str(sintel_root)
@@ -307,6 +348,7 @@ def prepare_portable_sam21_training(
         raise ValueError("portable mainline requires the joint U2 schedule")
     if parsed.action_bank.mode != "balanced_batches":
         raise ValueError("portable mainline requires balanced action batches")
+    semantic_preflight = _semantic_input_preflight(parsed)
 
     report = {
         "schema": PORTABLE_SAM21_TRAINING_SCHEMA_V1,
@@ -316,6 +358,7 @@ def prepare_portable_sam21_training(
         "training_config_digest": parsed.digest,
         "sintel_root": str(sintel_root),
         "sam21": sam_report,
+        "sam_semantic_preflight": semantic_preflight,
         "sea_raft": sea_report,
         "initialization": initialization_report,
         "torch": torch_report,
@@ -323,6 +366,9 @@ def prepare_portable_sam21_training(
             "u2_schedule": parsed.u2_schedule.mode,
             "action_schedule": parsed.action_bank.mode,
             "sam_semantic_enabled": parsed.sam_semantic_augmentation.enabled,
+            "fallback_to_full_segmentation": (
+                parsed.sam_semantic_augmentation.fallback_to_full_segmentation
+            ),
             "homography_enabled": parsed.sam_homography.enabled,
             "epochs": parsed.training.epochs,
             "batch_size": parsed.training.batch_size,

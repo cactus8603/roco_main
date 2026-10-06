@@ -299,6 +299,48 @@ def test_sam_semantic_augmentation_prefers_exact_key_objects(tmp_path):
     assert torch.isfinite(second.sam_semantic)
 
 
+def test_sam_semantic_augmentation_falls_back_when_exact_key_object_is_empty(
+    tmp_path,
+):
+    value = _config(tmp_path / "sam-semantic-fullseg-fallback").serializable()
+    value["sam_semantic_augmentation"] = asdict(
+        SamSemanticAugmentationPolicyV1(
+            enabled=True, activation_epoch=0, cache_size=2,
+            objects_per_batch=1, minimum_box_height=1,
+            maximum_box_height=10, minimum_box_width=1,
+            maximum_box_width=10, fallback_to_full_segmentation=True,
+        )
+    )
+    value["dataset"]["kwargs"].update({
+        "sam_context": True,
+        "sam_full_segmentation_root": "/not-read-by-test-double",
+        "sam_checkpoint_sha256": "a" * 64,
+    })
+    trainer = IntegratedUncertaintyTrainerV2(
+        IntegratedTrainerConfigV2.from_mapping(value), device="cpu",
+    )
+    raw = next(iter(trainer._loader(trainer.fit_dataset, training=True, epoch=0)))
+    raw["sam_key_object_mask"].zero_()
+    raw["sam_key_object_present"].fill_(False)
+    batch = trainer._move(raw)
+    first, _native, _base = trainer._forward_loss(
+        batch, augmentation_enabled=True, phase="joint",
+        semantic_augmentation_enabled=False,
+        semantic_cache_update_enabled=True,
+    )
+    assert first.sam_semantic_objects == 0
+    assert trainer.sam_semantic_cache is not None
+    assert trainer.sam_semantic_cache.ready
+    second, _native, _base = trainer._forward_loss(
+        batch, augmentation_enabled=True, phase="joint",
+        semantic_augmentation_enabled=True,
+        semantic_cache_update_enabled=True,
+    )
+    assert second.sam_semantic_objects == 2
+    assert second.sam_semantic_object_pixels > 0
+    assert torch.isfinite(second.sam_semantic)
+
+
 def test_optional_three_frame_fusion_reports_separate_validation_metrics(tmp_path):
     value = _config(tmp_path / "fusion-validation").serializable()
     value["dataset"]["kwargs"]["fusion_context"] = True

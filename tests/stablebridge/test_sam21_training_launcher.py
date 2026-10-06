@@ -3,8 +3,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
 from stablebridge.physical_repair.integrated_uncertainty_trainer import (
     IntegratedTrainerConfigV2,
 )
@@ -81,14 +79,16 @@ def test_mask_preflight_accepts_complete_lineage_with_enough_key_objects(
     assert report["key_object_count"] == 100
 
 
-def test_mask_preflight_rejects_semantic_cache_starvation(tmp_path, monkeypatch):
+def test_mask_preflight_allows_sparse_exact_objects_for_fullseg_fallback(
+    tmp_path, monkeypatch,
+):
     monkeypatch.setattr(launcher, "EXPECTED_SINTEL_FRAMES", 2)
     sintel_root = _sintel_root(tmp_path)
     output = _sam_output(tmp_path, sintel_root, key_object_count=1)
-    with pytest.raises(ValueError, match="too few key objects"):
-        launcher.validate_sam21_masks(
-            sam_mask_root=output, sintel_root=sintel_root,
-        )
+    _root, report = launcher.validate_sam21_masks(
+        sam_mask_root=output, sintel_root=sintel_root,
+    )
+    assert report["key_object_count"] == 2
 
 
 def test_portable_prepare_rewrites_every_machine_path_and_is_resume_stable(
@@ -124,6 +124,13 @@ def test_portable_prepare_rewrites_every_machine_path_and_is_resume_stable(
     monkeypatch.setattr(
         launcher, "_validate_torch_home",
         lambda _path: {"resnet34_sha256": launcher.RESNET34_CHECKPOINT_SHA256},
+    )
+    monkeypatch.setattr(
+        launcher, "_semantic_input_preflight",
+        lambda _config: {
+            "state": "passed", "usable_objects": 100,
+            "fallback_objects": 100,
+        },
     )
 
     arguments = {
@@ -162,4 +169,6 @@ def test_portable_prepare_rewrites_every_machine_path_and_is_resume_stable(
         "checkpoint": str(sea_checkpoint.resolve()),
     }
     assert config.sam_semantic_augmentation.enabled
+    assert config.sam_semantic_augmentation.fallback_to_full_segmentation
     assert not config.sam_homography.enabled
+    assert first_report["sam_semantic_preflight"]["usable_objects"] == 100

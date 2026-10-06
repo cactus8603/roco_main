@@ -253,8 +253,10 @@ done
 - `paired_files` 必須等於 100。
 - `region_count.median`、`region_count.p95` 不應因放寬門檻而失控。
 - `key_objects.nonempty_frame_fraction` 是主要指標。
-- `key_objects.total` 至少要足以填滿目前 100-object cache；只追求 mask
-  數量也不行，仍需抽看物件是否完整、不是碎片。
+- `key_objects.total` 是 exact key-object 品質指標；愈多愈好，但 v2 訓練會在
+  exact masks 不足時從 full segmentation 依 crop 選物件。最終是否可訓練，
+  以 training launcher 的 100-object semantic preflight 為準。仍需抽看物件
+  是否完整、不是碎片。
 - baseline 若仍接近 0%，但 crop1／points64 顯著提高，正式版本應採提高後的
   最保守有效設定。
 

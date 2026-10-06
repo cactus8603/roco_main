@@ -33,10 +33,13 @@ class SamSemanticAugmentationPolicyV1:
     maximum_motion_scale: float = 1.5
     reverse_motion_probability: float = 0.5
     horizontal_flip_probability: float = 0.5
+    fallback_to_full_segmentation: bool = False
 
     def __post_init__(self) -> None:
         if not isinstance(self.enabled, bool):
             raise ValueError("SAM semantic augmentation enabled must be boolean")
+        if not isinstance(self.fallback_to_full_segmentation, bool):
+            raise ValueError("SAM full-segmentation fallback must be boolean")
         for name in (
             "activation_epoch", "cache_size", "objects_per_batch",
             "minimum_box_height", "maximum_box_height",
@@ -85,9 +88,11 @@ class SamSemanticAugmentationPolicyV1:
     ) -> "SamSemanticAugmentationPolicyV1":
         if value is None:
             return cls()
-        if set(value) != set(asdict(cls())):
+        normalized = dict(value)
+        normalized.setdefault("fallback_to_full_segmentation", False)
+        if set(normalized) != set(asdict(cls())):
             raise ValueError("SAM semantic augmentation policy fields drift")
-        return cls(**dict(value))
+        return cls(**normalized)
 
 
 @dataclass(frozen=True)

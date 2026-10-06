@@ -50,6 +50,7 @@ tmp_trash
 /research/
 /docs/*
 !/docs/SAM21_REMOTE_PREPROCESSING.md
+!/docs/SAM21_REMOTE_TRAINING.md
 !/docs/training_progress/
 !/docs/training_progress/**
 

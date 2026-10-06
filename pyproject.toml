@@ -11,6 +11,7 @@ dependencies = ["numpy", "scipy", "torch", "opencv-python", "h5py", "Pillow"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+training = ["huggingface-hub", "safetensors", "torchvision"]
 
 [project.scripts]
 stablebridge = "stablebridge.cli:main"

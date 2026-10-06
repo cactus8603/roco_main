@@ -117,6 +117,25 @@ def _digest(value: Mapping[str, Any]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _portable_model_identity(value: object) -> dict[str, Any]:
+    """Return model semantics without host-specific provider locations."""
+
+    if not isinstance(value, Mapping) or set(value) != {"factory", "kwargs"}:
+        raise ValueError("model identity requires exact factory/kwargs fields")
+    kwargs = value.get("kwargs")
+    if not isinstance(kwargs, Mapping):
+        raise ValueError("model identity kwargs must be an object")
+    machine_paths = {"vendor_root", "config_path", "checkpoint"}
+    return {
+        "factory": str(value["factory"]),
+        "kwargs": {
+            str(key): item
+            for key, item in kwargs.items()
+            if str(key) not in machine_paths
+        },
+    }
+
+
 def _sha256_file(path: Path) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
@@ -859,7 +878,9 @@ class IntegratedUncertaintyTrainerV2:
             raise ValueError("model initialization checkpoint has no source config")
         if payload.get("config_digest") != _digest(source_config):
             raise ValueError("model initialization config digest drift")
-        if source_config.get("model") != self.config.serializable().get("model"):
+        if _portable_model_identity(source_config.get("model")) != (
+            _portable_model_identity(self.config.serializable().get("model"))
+        ):
             raise ValueError("model initialization architecture/config drift")
         if int(source_config.get("iters", -1)) != self.config.iters:
             raise ValueError("model initialization recurrent iteration count drift")

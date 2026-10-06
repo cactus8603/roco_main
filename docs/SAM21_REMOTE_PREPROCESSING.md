@@ -68,7 +68,7 @@ python3.10 -m venv "${REMOTE_VENV}"
 
 # 先依該 server 的 CUDA 安裝相容的 torch/torchvision；本機參考版本是：
 # torch 2.5.1+cu124、torchvision 0.20.1+cu124。
-"${REMOTE_VENV}/bin/python" -m pip install -e "${REMOTE_REPO}"
+"${REMOTE_VENV}/bin/python" -m pip install -e "${REMOTE_REPO}[training]"
 
 git clone https://github.com/facebookresearch/sam2.git "${SAM2_REPO}"
 git -C "${SAM2_REPO}" checkout 2b90b9f5ceec907a1c18123530e92e794ad901a4
@@ -334,46 +334,6 @@ hash 並發布符合本機路徑的 manifests。不要手動只改 JSON 路徑�
 
 ## 9. 在遠端啟動 SAM2.1／no-HG 聯合主線
 
-主線設定是：固定使用 SAM2.1 key objects、`joint_decoupled` U2、每個 epoch
-平衡交錯 10 個 action，且 Sintel 的 homography loss 關閉：
-
-```text
-configs/stablebridge/u2_sintel_searaft_action_bank_joint_sam21_nohg_v1.json
-```
-
-啟動前先將設定中的以下絕對路徑換成遠端實際位置：
-
-- `run_dir`
-- `dataset.kwargs.config_path`
-- `dataset.kwargs.sam_full_segmentation_root`
-- `model.kwargs.vendor_root`、`model.kwargs.config_path`、
-  `model.kwargs.checkpoint`
-- `model_initialization_checkpoint`
-
-`model_initialization_checkpoint` 是已完成的 U0ft integrated-v2 checkpoint，
-不會放進 Git。若要延續目前主線，需另行同步本機檔案：
-
-```text
-experiments/U2_sintel_searaft_uncertainty_refinement_u0ft_v2/seed11/best.pt
-size: 228 MiB
-sha256: 452eb049594d9940882b15d8b15cd166f27f4db248cf742c1f9e71c86957ab6f
-```
-
-確認 Sintel mask report 完整、checkpoint hash 正確後啟動：
-
-```bash
-REMOTE_REPO=/path/to/roco_main
-REMOTE_VENV=/path/to/venvs/roco-sam21
-cd "${REMOTE_REPO}"
-
-PYTHONPATH="${REMOTE_REPO}/src:${REMOTE_REPO}" \
-CUBLAS_WORKSPACE_CONFIG=:4096:8 \
-CUDA_VISIBLE_DEVICES=0 \
-"${REMOTE_VENV}/bin/python" scripts/train_integrated_uncertainty_flow.py \
-  --config configs/stablebridge/u2_sintel_searaft_action_bank_joint_sam21_nohg_v1.json \
-  --device cuda \
-  --resume auto
-```
-
-`--resume auto` 只會續跑同一個 `run_dir/latest.pt`；要從全新實驗開始時，請指定
-一個空的 `run_dir`。不要把別的 lineage checkpoint 放入該目錄。
+不要手改主線 JSON 中的本機絕對路徑。完整環境、SEA-RAFT、U0ft checkpoint、
+preflight、正式啟動及續跑指令請接著依照
+[`SAM21_REMOTE_TRAINING.md`](SAM21_REMOTE_TRAINING.md)。

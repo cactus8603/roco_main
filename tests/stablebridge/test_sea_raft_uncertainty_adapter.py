@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from argparse import Namespace
 import math
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -92,25 +93,31 @@ def test_decoder_rejects_invalid_info(info, error):
         decode_sea_raft_mixture_uncertainty(info, var_min=0, var_max=10)
 
 
-def test_pinned_loader_reuses_e58_identity_paths_and_model_args():
-    from experiments.E58_intervention_memory import sea_raft_p0
+def test_pinned_loader_uses_portable_identity_boundary_and_explicit_paths():
+    from stablebridge.physical_repair import sea_raft_loader
 
     model = FakeSeaRaft()
-    report = {"vendor_commit": sea_raft_p0.VENDOR_COMMIT}
+    report = {"vendor_commit": sea_raft_loader.SEA_RAFT_VENDOR_COMMIT}
+    vendor = Path("/portable/vendor/SEA-RAFT")
+    config = vendor / "config/eval/spring-M.json"
+    checkpoint = Path("/portable/checkpoints/model.safetensors")
     with patch.object(
-        sea_raft_p0,
-        "load_official_model",
+        sea_raft_loader,
+        "load_pinned_sea_raft_official_model",
         return_value=(model, object(), object(), report),
     ) as loader:
-        predictor, actual_report = load_pinned_sea_raft_predictor(device="cpu")
+        predictor, actual_report = load_pinned_sea_raft_predictor(
+            device="cpu", vendor_root=vendor, config_path=config,
+            checkpoint=checkpoint,
+        )
     assert actual_report is report
     assert predictor.model is model
     assert predictor.iters == 4
     assert predictor.var_min == -2
     assert predictor.var_max == 3
     loader.assert_called_once_with(
-        vendor_root=sea_raft_p0.DEFAULT_VENDOR,
-        config_path=sea_raft_p0.DEFAULT_CONFIG,
-        checkpoint=sea_raft_p0.DEFAULT_CHECKPOINT,
+        vendor_root=vendor,
+        config_path=config,
+        checkpoint=checkpoint,
         device="cpu",
     )

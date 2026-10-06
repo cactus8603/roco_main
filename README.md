@@ -301,6 +301,9 @@ SAM 版 U2 使用獨立 config／run directory，不會把新 objective 插入�
 SAM 2.1 Hiera-Large 的跨伺服器環境設定、100-frame key-object quality sweep、
 多 GPU sharding、續跑與搬回本機流程，整理在
 [`docs/SAM21_REMOTE_PREPROCESSING.md`](docs/SAM21_REMOTE_PREPROCESSING.md)。
+另一台 server 從環境、權重、preflight 到正式啟動目前
+`SAM2.1 + joint action bank + no-HG` 主線的完整步驟，整理在
+[`docs/SAM21_REMOTE_TRAINING.md`](docs/SAM21_REMOTE_TRAINING.md)。
 
 ```bash
 PYTHONPATH=src /ssd7/cactus8603/roco_spring/optical-flow-track/.venv/bin/python \

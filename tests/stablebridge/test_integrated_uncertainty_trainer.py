@@ -428,8 +428,14 @@ def test_u2_loads_completed_native_head_only_initialization(tmp_path):
 
 
 def test_new_stage_warm_starts_full_model_with_traced_lineage(tmp_path):
+    source_value = _config(tmp_path / "source-full").serializable()
+    source_value["model"]["kwargs"].update({
+        "vendor_root": "/source/vendor",
+        "config_path": "/source/vendor/config.json",
+        "checkpoint": "/source/model.safetensors",
+    })
     source = IntegratedUncertaintyTrainerV2(
-        _config(tmp_path / "source-full"), device="cpu",
+        IntegratedTrainerConfigV2.from_mapping(source_value), device="cpu",
     )
     assert source.train() == 0
     payload = torch.load(source.best_path, map_location="cpu", weights_only=False)
@@ -438,6 +444,11 @@ def test_new_stage_warm_starts_full_model_with_traced_lineage(tmp_path):
     torch.save(payload, source.best_path)
 
     target_value = _config(tmp_path / "target-full").serializable()
+    target_value["model"]["kwargs"].update({
+        "vendor_root": "/remote/vendor",
+        "config_path": "/remote/vendor/config.json",
+        "checkpoint": "/remote/model.safetensors",
+    })
     target_value["model_initialization_checkpoint"] = str(source.best_path)
     target = IntegratedUncertaintyTrainerV2(
         IntegratedTrainerConfigV2.from_mapping(target_value), device="cpu",

@@ -1,8 +1,8 @@
 """Frozen SEA-RAFT inference and its native mixture uncertainty.
 
-The pinned Spring-M loader lives in
-``experiments/E58_intervention_memory/sea_raft_p0.py``.  This module keeps
-that identity/load boundary and adds only a small training-facing adapter.
+The portable pinned Spring-M loader lives beside this module in
+``sea_raft_loader.py``.  This module keeps that identity/load boundary and
+adds only a small training-facing adapter.
 
 SEA-RAFT emits four ``info`` channels per pixel: two unnormalised mixture
 weights followed by the raw log scales of a large- and a small-scale Laplace
@@ -18,7 +18,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-import sys
 from typing import Any, Mapping
 
 import torch
@@ -211,41 +210,17 @@ def load_pinned_sea_raft_model(
 
     # Keep heavyweight vendor imports and safetensors loading outside module
     # import so CPU contract tests need neither the checkpoint nor CUDA.
-    try:
-        from experiments.E58_intervention_memory import sea_raft_p0
-    except ModuleNotFoundError as error:
-        if error.name != "experiments":
-            raise
-        # Installed/editable ``src`` layouts do not necessarily include the
-        # repository root on sys.path.  Resolve the pinned E58 loader relative
-        # to this module rather than depending on the caller's working dir.
-        repository_root = Path(__file__).resolve().parents[3]
-        loader_path = (
-            repository_root / "experiments" / "E58_intervention_memory"
-            / "sea_raft_p0.py"
+    if vendor_root is None or config_path is None or checkpoint is None:
+        raise ValueError(
+            "portable SEA-RAFT loading requires explicit vendor, config, "
+            "and checkpoint paths"
         )
-        if not loader_path.is_file():
-            raise ModuleNotFoundError(
-                f"pinned SEA-RAFT loader is missing: {loader_path}"
-            ) from error
-        sys.path.insert(0, str(repository_root))
-        try:
-            from experiments.E58_intervention_memory import sea_raft_p0
-        finally:
-            try:
-                sys.path.remove(str(repository_root))
-            except ValueError:  # pragma: no cover
-                pass
+    from .sea_raft_loader import load_pinned_sea_raft_official_model
 
-    resolved_vendor = sea_raft_p0.DEFAULT_VENDOR if vendor_root is None else vendor_root
-    resolved_config = sea_raft_p0.DEFAULT_CONFIG if config_path is None else config_path
-    resolved_checkpoint = (
-        sea_raft_p0.DEFAULT_CHECKPOINT if checkpoint is None else checkpoint
-    )
-    model, _corr_factory, _utils, report = sea_raft_p0.load_official_model(
-        vendor_root=resolved_vendor,
-        config_path=resolved_config,
-        checkpoint=resolved_checkpoint,
+    model, _corr_factory, _utils, report = load_pinned_sea_raft_official_model(
+        vendor_root=vendor_root,
+        config_path=config_path,
+        checkpoint=checkpoint,
         device=device,
     )
     return model, report

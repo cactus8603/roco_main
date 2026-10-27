@@ -19,6 +19,28 @@ flowchart LR
 圖中的兩個 WAFT 區塊屬於**同一個預訓練 WAFT**。特徵提取、後續更新與光流讀出
 的權重全部固定；訓練只改變修復模型的權重。
 
+## 先跑通安裝、訓練與推論
+
+以下命令使用 Python 3.10。CPU 範例使用小型合成特徵，不需要 GPU 或官方權重：
+
+```bash
+git clone https://github.com/cactus8603/roco_main.git
+cd roco_main
+python3.10 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install torch==2.5.1 --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -e ".[dev]"
+waft-repair demo --output outputs/cpu-example --epochs 10
+```
+
+成功後會保存修復模型 `outputs/cpu-example/training/checkpoint.pt`、訓練指標與
+`outputs/cpu-example/repaired-features.pt`。這是程式通路驗證，未載入 WAFT，也不代表光流效果。
+
+**實際影像的完整流程請接著看 [從安裝到訓練與影像推論](docs/running.md)**：
+包含 CUDA 環境、官方權重、KITTI／Sintel GT 轉換、便宜／昂貴 target、訓練與兩張影像推論。
+完整模型與流程程式在 [`src/waft_repair`](src/waft_repair)。
+
 ## 訓練時，target 從哪裡來？
 
 Target features 是希望修復模型學到的特徵，利用訓練資料的真實光流（GT）離線製作。
@@ -67,7 +89,6 @@ Sintel Final 的便宜 target 由**對應 Clean 的完整雙幀影像**製作，
 - [資料存放清單](docs/data-inventory.md)：實際磁碟路徑、原始資料、features、targets 與修復輸出。
 - [程式使用方式](docs/usage.md)：目前公開的 target API、外部依賴與測試方法。
 
-此 repository 的當前入口是上述 WAFT 特徵修復流程。舊研究程式保留在原路徑，
-修復模型的完整訓練與推論工具尚未整理成公開套件；目前公開的可重用程式涵蓋 target 製作與凍結 WAFT 的特徵接入。
-資料集、官方權重與大型特徵檔需另行準備。
+本 repository 已提供修復模型、target 製作、資料清單核驗、訓練／續訓與影像推論程式。
+資料集、官方 WAFT 權重與訓練後的修復權重需另行準備；程式不會自動啟動背景工作。
 

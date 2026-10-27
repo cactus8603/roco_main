@@ -58,3 +58,8 @@ Target 品質顯示可供學習的監督方向；特徵損失是否下降，以�
 這些程式移植驗證沒有新增預訓練 WAFT 的 GPU 成效或速度測量。
 
 權重、RGB、GT arrays、完整 feature tensors 與執行 logs 保留在本機，不放入 repository。
+
+修復模型與訓練／推論工具已公開；另以小型 CPU 合成資料驗證完整訓練、續訓與權重重載，
+並以完整官方 WAFT checkpoint 跑通小尺寸 RGB → target → 修復更新 → 無 GT 影像推論。
+這些是程式可執行性及移植驗證，未新增完整資料集的修復模型成效結論。
+

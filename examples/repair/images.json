@@ -1,0 +1,11 @@
+{
+  "samples": [
+    {
+      "pair_id": "street-pair",
+      "domain": "kitti",
+      "image1": "../../data/street-first.png",
+      "image2": "../../data/street-second.png",
+      "flow": "../../data/street-flow.npz"
+    }
+  ]
+}

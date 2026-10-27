@@ -1,0 +1,14 @@
+{
+  "samples": [
+    {
+      "pair_id": "final-pair",
+      "domain": "sintel-final",
+      "image1": "../../data/final-first.png",
+      "image2": "../../data/final-second.png",
+      "flow": "../../data/shared-flow.npz",
+      "teacher_image1": "../../data/clean-first.png",
+      "teacher_image2": "../../data/clean-second.png",
+      "target_source_pair_id": "clean-pair"
+    }
+  ]
+}

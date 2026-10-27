@@ -84,3 +84,11 @@ tmp_trash
 !/docs/data-inventory.md
 !/docs/data-inventory.csv
 
+
+# Runnable repair guide and external dependencies/build outputs.
+!/docs/running.md
+/external/
+/build/
+/dist/
+*.egg-info/
+

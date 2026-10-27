@@ -1,0 +1,34 @@
+SLiM interaction extraction for WAFT feature repair
+
+Upstream: https://github.com/Band-127/SLiM
+Pinned revision: 8b34762c836e80f142d013d7e83e63d05efca1e3
+Source files: src/backbone/convmamba.py;
+              src/backbone/mamba/MambaEncoder.py
+Copyright (c) 2026 CSW33(Choo Sin Wai).
+License: MIT; full text in SLIM_LICENSE.
+
+The module extracts the Aggregated_InceptionMamba interaction from the full
+RGB matching network. Names and operations of this interaction are retained;
+the public interface accepts [B,2,C,H,W] rather than concatenated-width grids.
+The released duplicate row-major scan and column-major reassembly are
+deliberately retained. Input checks and explicit backend selection are added.
+No upstream pretrained weights or full RGB/matching network are distributed.
+
+Mamba2 reference:
+Upstream: https://github.com/state-spaces/mamba/tree/v2.2.2
+Sources: mamba_ssm/modules/mamba2.py;
+         mamba_ssm/ops/triton/layernorm_gated.py
+Copyright (c) 2024, Tri Dao, Albert Gu (mamba2.py).
+Copyright (c) 2024, Tri Dao (layernorm_gated.py).
+License: Apache-2.0; full text in MAMBA_LICENSE.
+
+The adapted Mamba2Reference uses pure PyTorch causal convolution, gated RMS
+normalization, and a scalar state recurrence. It retains the upstream default
+SLiM Mamba2 parameter layout, with no fused/distributed/generation-cache code.
+A sequence-length guard limits CPU reference work. The native backend imports
+the original mamba-ssm==2.2.2 package explicitly and performs no fallback.
+This adaptation has not been validated for native CUDA numerical parity.
+
+WAFT feature extraction and full five-update consumer follow the official WAFT architecture.
+Upstream: https://github.com/princeton-vl/WAFT
+Copyright and BSD-3-Clause license: WAFT_LICENSE. Official source and checkpoints are supplied separately.

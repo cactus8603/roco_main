@@ -24,44 +24,44 @@
   "scientific_scope": "Offline GT-supervised targets on exposed TRAIN. No repair-model, heldout, full1752 or global optimum claim.",
   "original_reports": [
     {
-      "path": "operations/waft_gt_rgb_kitti_two_methods_v2_20261027/independent_EPE_review.json",
       "bytes": 731883,
-      "sha256": "0459a757d5cba3a3c09e3b4508dac480ef8314621a090fc2126bca9d2ff6b349"
+      "sha256": "0459a757d5cba3a3c09e3b4508dac480ef8314621a090fc2126bca9d2ff6b349",
+      "description": "KITTI target and RGB independent audit"
     },
     {
-      "path": "operations/waft_gt_rgb_kitti_two_methods_v2_20261027/actual_terminal_host_review.json",
       "bytes": 21897,
-      "sha256": "b434c3bb0280e034d20ac2d50bc5aff63bdeb889b41ffe9771a6b5104fc44092"
+      "sha256": "b434c3bb0280e034d20ac2d50bc5aff63bdeb889b41ffe9771a6b5104fc44092",
+      "description": "KITTI completion verification"
     },
     {
-      "path": "operations/waft_gt_rgb_clean_method_search_v2_20261026/independent_EPE_review.json",
       "bytes": 1211414,
-      "sha256": "e85616efa09adb3379e6ccb985083b363c54ca56c3cfb3d0e75924420a2af01c"
+      "sha256": "e85616efa09adb3379e6ccb985083b363c54ca56c3cfb3d0e75924420a2af01c",
+      "description": "Sintel Clean target and RGB independent audit"
     },
     {
-      "path": "operations/waft_gt_rgb_clean_method_search_v2_20261026/actual_terminal_host_review.json",
       "bytes": 7479,
-      "sha256": "33292e5261a34eb77379f237aff84a8c743530a8bf6be6b5126fed02d32b26e2"
+      "sha256": "33292e5261a34eb77379f237aff84a8c743530a8bf6be6b5126fed02d32b26e2",
+      "description": "Sintel Clean completion verification"
     },
     {
-      "path": "operations/waft_cheap_target_cross_domain_summary_v1_20261027/cross_domain_review.json",
       "bytes": 788380,
-      "sha256": "f411e0b5519900e214b6136d4d8e48b7f14f25e263a1486a63a816fced0c8ca6"
+      "sha256": "f411e0b5519900e214b6136d4d8e48b7f14f25e263a1486a63a816fced0c8ca6",
+      "description": "Paired Clean to Final equivalence audit"
     },
     {
-      "path": "operations/waft_dense_target_epe_continuation_v2_20261026/fixed_target_method.json",
       "bytes": 6975,
-      "sha256": "04e4cf38c65f6423378ff9a99d12145c9b93a085dfc80d6be23266049af6269f"
+      "sha256": "04e4cf38c65f6423378ff9a99d12145c9b93a085dfc80d6be23266049af6269f",
+      "description": "Expensive target construction specification"
     },
     {
-      "path": "operations/waft_dense_target_epe_continuation_v2_20261026/independent_CPU_audit.json",
       "bytes": 131499,
-      "sha256": "937a940becb246125c22fe02f34eb74771be8aa0af02d6b0ea9bdaa9e22b5bd5"
+      "sha256": "937a940becb246125c22fe02f34eb74771be8aa0af02d6b0ea9bdaa9e22b5bd5",
+      "description": "Expensive target independent optimizer and flow audit"
     },
     {
-      "path": "operations/waft_dense_target_epe_continuation_v2_20261026/target_terminal_review.json",
       "bytes": 2333,
-      "sha256": "5ffb1e4f8ea164bffc7c7f02a96c384df6c066e8eb5bbe6136de37ee3a121b60"
+      "sha256": "5ffb1e4f8ea164bffc7c7f02a96c384df6c066e8eb5bbe6136de37ee3a121b60",
+      "description": "Expensive target completion verification"
     }
   ],
   "verification": "Completed native original jobs plus saved-only rawGT/RGB/optimizer audits. Encoder or gradient NN replay is not claimed by those saved-only audits.",
@@ -105,12 +105,12 @@
   },
   "public_files": {
     "aggregate": {
-      "path": "docs/waft_targets_v1/results.csv",
+      "path": "docs/results/summary.csv",
       "bytes": 1021,
       "sha256": "b5e1ee2c431db627db8734cbf7c2c854ad6569ebdd6037263c1a88bbacfea680"
     },
     "per_case": {
-      "path": "docs/waft_targets_v1/cases.csv",
+      "path": "docs/results/cases.csv",
       "bytes": 53319,
       "sha256": "cc2ac7cd0c736c5374bde25d7240247a399dbfacdfbff381e8477a67cb7bf9ac"
     }

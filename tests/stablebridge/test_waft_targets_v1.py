@@ -220,7 +220,7 @@ def test_published_recipe_and_complete_case_denominators():
     assert config['common_consumer']['updates']==T.STEPS==5
     assert config['methods'][T.CHEAP_METHOD]['alpha']==1
     assert config['methods'][T.EXPENSIVE_METHOD]['optimizer_updates']==512
-    rows=list(csv.DictReader((root/'docs/waft_targets_v1/cases.csv').open()))
+    rows=list(csv.DictReader((root/'docs/results/cases.csv').open()))
     for domain,n in [('kitti',160),('sintel_clean',100),('sintel_final',100)]:
         assert sum(r['method']==T.CHEAP_METHOD and r['domain']==domain for r in rows)==n
     assert sum(r['method']==T.EXPENSIVE_METHOD for r in rows)==2

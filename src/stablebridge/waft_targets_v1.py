@@ -3,7 +3,7 @@
 No model, weights, datasets, device, workers, or files are acquired on import.
 The caller supplies an already loaded official WAFT and its geometry helpers.
 Historical native results come from the audited experiments documented in
-docs/waft_targets_v1, not from an additional run of this portable module.
+docs/results.md, not from an additional run of this portable module.
 """
 from __future__ import annotations
 
@@ -220,7 +220,7 @@ class FrozenWAFTBackend:
 @torch.no_grad()
 def cheap_target(backend: FrozenWAFTBackend, pair: Tensor, gt: Tensor, valid: Tensor,
                  visible: Tensor, *, original: FeaturePair | None = None) -> dict:
-    """Selected visible_pull_1. For Final, pass its corresponding Clean pair.
+    """Selected visible RGB reconstruction. For Final, pass its corresponding Clean pair.
 
     A cached original must come from this same teacher RGB pair, including
     its second frame. A Final original cannot supply the Clean second field.

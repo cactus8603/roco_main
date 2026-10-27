@@ -31,7 +31,6 @@
   },
   "methods": {
     "waft-visible-pull-rgb-v1": {
-      "historical_arm": "visible_pull_1",
       "mask": "GT valid AND finite flow AND complete inbounds endpoint AND known nonoccluded",
       "KITTI_visibility": "flow_noc validity; flow values still come from flow_occ",
       "Sintel_visibility": "occlusions == 0",
@@ -54,20 +53,25 @@
       "acceptance": "per-domain mean EPE improvement; regressions retained and reported"
     },
     "waft-dense-final-epe-512-v1": {
-      "historical_method": "dense_final_EPE_fixed_total512",
       "teacher_RGB_domain": "same render as original input, including native Final for Sintel Final",
       "parameterization": "Fstar=F0+sigma*delta on native feature centers; original padding retained",
       "sigma": "per-channel RMS of original native features, both frames, float64 reduction",
       "sigma_floor": "0.01*lower_median_64_channel_RMS + 1e-8",
       "delta_initialization": 0.0,
-      "delta_bound": [-0.25, 0.25],
+      "delta_bound": [
+        -0.25,
+        0.25
+      ],
       "objective": "float32 vector EPE of only fifth native flow against fixed valid GT",
       "gradient_graph": "full recurrent-flow and sampling-coordinate feedback; delta only",
       "optimizer": {
         "name": "AdamW",
         "learning_rate": 0.001,
-        "betas": [0.9, 0.999],
-        "epsilon": 1e-8,
+        "betas": [
+          0.9,
+          0.999
+        ],
+        "epsilon": 1e-08,
         "weight_decay": 0.0,
         "foreach": false,
         "fused": false
@@ -75,7 +79,7 @@
       "gradient_clip": {
         "global_norm": 1.0,
         "norm_and_multiply_dtype": "float64",
-        "denominator_epsilon": 1e-6,
+        "denominator_epsilon": 1e-06,
         "copy_gradient_to": "float32"
       },
       "projection": "after every AdamW step clamp delta, then zero delta on padding",

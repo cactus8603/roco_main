@@ -13,7 +13,7 @@
 | `training.py` | Feature MSE 訓練、續訓與特徵推論 |
 | `checkpoint.py` | 權重、optimizer、RNG 與雜湊保存／載入 |
 | `backend.py` | 嚴格載入官方凍結 WAFT、影像資料準備及光流推論 |
-| `targets.py` | 非遮擋 RGB 重建與固定 512 次特徵最佳化 |
+| `targets.py` | 非遮擋 RGB 重建與可選 32／256／512 次特徵最佳化 |
 | `cli.py` | `waft-repair` 命令 |
 
 ## 修復模型
@@ -60,6 +60,10 @@ Reference 適合小型 CPU tensors；完整影像需明確選擇 `backend="nativ
 Input 封包使用 `features`，target 封包使用 `teacher_features`，皆為 CPU FP32 `[1,2,64,Hf,Wf]`。
 兩種封包均包含 `pair_id`、`domain`、`native_hw`、`padding`、`waft_checkpoint_sha256`；
 target 另包含 `target_kind` 與對應製法的 `target_method`。
+昂貴版的 `target_method` 為 `waft-dense-final-epe-{steps}-v1`，
+`optimizer_updates` 記錄 32、256 或 512，`selected_step` 位於 0 到該預算之間。
+`prepare` 產生的 manifest 另保存 `target_steps` 與每筆 `teacher_updates`；
+載入時會核對步數與方法一致。既有 512 步封包仍相容。
 若同一個昂貴封包保存兩份特徵，可在清單指定 `input_key="original"` 與 `target_key="teacher_features"`。
 
 `.pt` 透過 `weights_only=True` 載入，只接受 tensors 與基本 metadata。
@@ -97,10 +101,14 @@ from waft_repair.backend import load_backend
 backend = load_backend("external/WAFT", "checkpoints/waft/zero-shot.pth", device="cuda:0")
 original = backend.encode_pair(rgb_pair)
 cheap = cheap_target(backend, rgb_pair, gt_cpu, valid_cpu, visible_cpu, original=original)
-expensive = expensive_target(backend, original, gt_cpu.to("cuda:0"), valid_cpu.to("cuda:0"))
+expensive = expensive_target(backend, original, gt_cpu.to("cuda:0"), valid_cpu.to("cuda:0"),
+                             steps=32)  # 32, 256, 512；省略時為 512
 ```
 
 昂貴 API 必須在 autograd 啟用時呼叫，WAFT 權重仍保持凍結。
+CLI 對應 `prepare --target expensive --target-steps 32`；
+`prepare_dataset(..., target_kind="expensive", target_steps=32)` 可用於影像批次準備。
+選項只改外層 AdamW 步數，WAFT 每次仍完整執行 5 次更新。
 Final 的便宜 target 請傳入完整配對 Clean RGB 與其原始特徵，原 Final input features 另行保存。
 舊的固定 target API 路徑保留相容性；新流程統一使用上述可讀模組。
 

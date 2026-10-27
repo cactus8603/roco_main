@@ -49,10 +49,25 @@ Target features 是希望修復模型學到的特徵，利用訓練資料的真�
 | Target 版本 | 如何製作 | 主要計算成本 |
 |---|---|---|
 | **便宜版：非遮擋區 RGB 重建** | 用 GT 找到第二張影像的對應位置，重建第一張影像的可見區，再經凍結的 WAFT 特徵提取器 | 已快取 target 來源影像對的特徵時，額外編碼一張影像；不做反向傳播或逐筆最佳化 |
-| **昂貴版：直接最佳化特徵** | 固定 WAFT，逐筆調整特徵，使 WAFT 最後輸出的光流更接近 GT | 固定 512 次特徵最佳化，每次通過完整 WAFT 光流估計 |
+| **昂貴版：直接最佳化特徵** | 固定 WAFT，逐筆調整特徵，使 WAFT 最後輸出的光流更接近 GT | 可選 32、256、512 次特徵最佳化，預設 512；每次通過完整 WAFT 光流估計 |
 
 兩者都是**離線監督訊號**。修復模型每次訓練使用已選定版本的 target，
 不依每筆 GT 分數挑選兩版中較好的結果。
+
+昂貴版以 `--target-steps` 選擇每筆特徵最佳化步數，例如：
+
+```bash
+waft-repair prepare --spec examples/repair/images.json \
+  --target expensive --target-steps 32 --output outputs/expensive-32-features \
+  --waft-source external/WAFT --waft-checkpoint checkpoints/waft/zero-shot.pth \
+  --device cuda:0
+```
+
+將 `32` 改為 `256` 或 `512` 即可；省略此選項時仍使用 512。
+這是外層 AdamW 的更新次數，WAFT 內部始終完整執行 5 次更新。
+各版本都保留原始 F0，選取預算內最早達到嚴格最低 EPE 的候選；
+其餘最佳化設定、±0.25σ 限制與品質判準相同。
+不同步數請使用不同輸出目錄。便宜版不使用此選項。
 
 ## 三個階段
 

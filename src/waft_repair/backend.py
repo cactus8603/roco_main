@@ -21,7 +21,7 @@ from PIL import Image
 import torch
 
 from . import data
-from .targets import (CHECKPOINT_SHA256, FrozenWAFTBackend, cheap_target,
+from .targets import (CHECKPOINT_SHA256, EXPENSIVE_STEPS, FrozenWAFTBackend, cheap_target,
                       expensive_target)
 
 
@@ -194,9 +194,15 @@ def _save_tensor_packet(path: Path, packet: dict) -> None:
         torch.save(value, stream)
 
 
-def prepare_dataset(spec_path, output_dir, source, checkpoint, device="cpu", target_kind="cheap"):
+def prepare_dataset(spec_path, output_dir, source, checkpoint, device="cpu", target_kind="cheap",
+                    *, target_steps: int | None = None):
     """Generate full paired input/target features from an explicit RGB/GT spec."""
     data.require(target_kind in ("cheap", "expensive"), "target_kind must be cheap or expensive")
+    data.require(target_steps is None or (type(target_steps) is int and target_steps in EXPENSIVE_STEPS),
+                 "target_steps must be one of 32, 256, 512")
+    data.require(target_steps is None or target_kind == "expensive",
+                 "target_steps is only valid for expensive targets")
+    steps = 512 if target_steps is None else target_steps
     spec_path = Path(spec_path).resolve(strict=True)
     spec = json.loads(spec_path.read_text(encoding="utf-8"))
     rows = spec.get("samples")
@@ -209,6 +215,8 @@ def prepare_dataset(spec_path, output_dir, source, checkpoint, device="cpu", tar
     output.mkdir(parents=True, exist_ok=False)
     portable = dict(schema=data.SCHEMA, waft_checkpoint_sha256=backend.metadata["waft_checkpoint_sha256"],
                     target_kind=target_kind, samples=[])
+    if target_kind == "expensive":
+        portable["target_steps"] = steps
     for index, row in enumerate(rows):
         domain = row.get("domain")
         data.require(domain in ("kitti", "sintel-clean", "sintel-final", "synthetic"), "Unknown domain")
@@ -232,7 +240,7 @@ def prepare_dataset(spec_path, output_dir, source, checkpoint, device="cpu", tar
                 teacher_domain = "sintel-clean"
             target = cheap_target(backend, teacher_pair, gt, valid, visible, original=cached)
         else:
-            target = expensive_target(backend, original, gt.to(device), valid.to(device))
+            target = expensive_target(backend, original, gt.to(device), valid.to(device), steps=steps)
         metadata = dict(schema=data.FEATURE_SCHEMA, pair_id=row["pair_id"], domain=domain,
                         native_hw=list(original.native_hw), padding=list(original.padding),
                         waft_checkpoint_sha256=backend.metadata["waft_checkpoint_sha256"])
@@ -248,6 +256,8 @@ def prepare_dataset(spec_path, output_dir, source, checkpoint, device="cpu", tar
         _save_tensor_packet(output / target_name, target_metadata)
         entry = dict(pair_id=row["pair_id"], domain=domain, native_hw=metadata["native_hw"],
                      padding=metadata["padding"], input_file=input_name, target_file=target_name)
+        if target_kind == "expensive":
+            entry["teacher_updates"] = target["optimizer_updates"]
         if domain == "sintel-final" and target_kind == "cheap":
             entry["target_source_pair_id"] = teacher_id
         portable["samples"].append(entry)

@@ -181,15 +181,17 @@ class ScalarBackend:
 
 
 @pytest.mark.parametrize('constant',[False,True])
-def test_dense512_no_early_stop_exact_first_last_update_bound_and_first_best(constant):
+@pytest.mark.parametrize('steps',[32,256,512])
+def test_dense_no_early_stop_exact_first_last_update_bound_and_first_best(constant,steps):
     b=ScalarBackend(constant);base=torch.ones(1,2,64,4,4)
     mask=T.native_mask(base,(5,5),(1,2,1,2));base.masked_fill_(~mask.expand_as(base),-0.)
     original=T.FeaturePair(base,(5,5),(1,2,1,2),'fixture')
     gt=torch.zeros(1,2,5,5);gt[:,0]=2.
     valid=torch.ones(1,5,5,dtype=torch.bool)
-    result=T.expensive_target(b,original,gt,valid)
-    assert result['optimizer_updates']==512 and len(result['history'])==513
-    assert len(b.calls)==515  # initial no-grad +513 search +selected no-grad
+    result=T.expensive_target(b,original,gt,valid,steps=steps)
+    assert result['optimizer_updates']==steps and len(result['history'])==steps+1
+    assert result['method']==f'waft-dense-final-epe-{steps}-v1'
+    assert len(b.calls)==steps+3  # initial no-grad +budget+1 search +selected no-grad
     assert result['selected_step']==min(result['history'],key=lambda r:r['EPE'])['step']
     outside=~mask.expand_as(base)
     assert np.array_equal(base[outside].numpy().view(np.uint32),result['teacher_features'][outside].numpy().view(np.uint32))
@@ -201,8 +203,55 @@ def test_dense512_no_early_stop_exact_first_last_update_bound_and_first_best(con
         # Constant-sign gradient gives Adam's analytic first step lr*g/(|g|+eps).
         g=1/(1+1e-6);expected=1+.001*g/(g+1e-8)
         assert abs(float(b.calls[2][0,0,0,1,1])-expected)<1e-7
-        assert b.calls[-2][0,0,0,1,1]==1.25
-        assert result['target_metrics']['EPE']==.75 and result['qualified']
+        if steps>=256:
+            assert b.calls[-2][0,0,0,1,1]==1.25
+            assert result['target_metrics']['EPE']==.75 and result['qualified']
+        else:
+            assert float(b.calls[-2][0,0,0,1,1])==pytest.approx(1.032,abs=2e-6)
+            assert result['target_metrics']['EPE']==pytest.approx(.968,abs=2e-6)
+            assert not result['qualified']
+
+
+@pytest.mark.parametrize('steps',[0,31,64,128,513,True,32.0,'32',None])
+def test_invalid_budget_is_rejected_before_backend_or_generation(steps):
+    with pytest.raises(ValueError,match='32, 256, 512'):
+        T.expensive_target(None,None,None,None,steps=steps)
+
+
+def test_default512_and_short_budget_prefixes_preserve_feature_bytes():
+    base=torch.ones(1,2,64,4,4)
+    original=T.FeaturePair(base,(5,5),(1,2,1,2),'fixture')
+    gt=torch.zeros(1,2,5,5);gt[:,0]=2.
+    valid=torch.ones(1,5,5,dtype=torch.bool)
+    full_backend=ScalarBackend()
+    full=T.expensive_target(full_backend,original,gt,valid)
+    for steps in (32,256,512):
+        short_backend=ScalarBackend()
+        short=T.expensive_target(short_backend,original,gt,valid,steps=steps)
+        assert short['history']==full['history'][:steps+1]
+        assert all(torch.equal(a.view(torch.uint8),b.view(torch.uint8))
+                   for a,b in zip(short_backend.calls[:-1],full_backend.calls[:steps+2]))
+        if steps==512:
+            assert short['method']==T.EXPENSIVE_METHOD
+            for key in ('teacher_features','selected_delta','sigma','native_mask'):
+                assert torch.equal(short[key].view(torch.uint8),full[key].view(torch.uint8))
+            assert short['selected_step']==full['selected_step']
+
+
+def test_dense32_runs_complete_five_update_backend_with_frozen_weights():
+    b=backend()
+    pair,gt,valid=rgb_fixture(5,7)
+    original=b.encode_pair(pair)
+    before={key:value.clone() for key,value in b.core.state_dict().items()}
+    calls=[]
+    hook=b.core.flow_head.register_forward_hook(lambda *unused:calls.append(True))
+    result=T.expensive_target(b,original,gt,valid,steps=32)
+    hook.remove()
+    # 35 solves plus the checkpoint recomputation for 32 backwards.
+    assert len(calls)==5*(35+32)
+    assert len(result['history'])==33 and 0<=result['selected_step']<=32
+    assert all(torch.equal(before[key],value) for key,value in b.core.state_dict().items())
+    assert all(p.grad is None and not p.requires_grad for p in b.core.parameters())
 
 
 def test_final_loss_is_vector_EPE_not_component_MSE():

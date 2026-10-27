@@ -18,6 +18,8 @@ from torch.utils.checkpoint import checkpoint
 
 CHEAP_METHOD = "waft-visible-pull-rgb-v1"
 EXPENSIVE_METHOD = "waft-dense-final-epe-512-v1"
+EXPENSIVE_STEPS = (32, 256, 512)
+EXPENSIVE_METHODS = {steps: f"waft-dense-final-epe-{steps}-v1" for steps in EXPENSIVE_STEPS}
 CHECKPOINT_SHA256 = "1b49d1fc4513c6fa34a8de8f791dd8735d366d4b25d8dea47626a79056edd402"
 STEPS = 5
 
@@ -278,15 +280,17 @@ def _field(original, sigma, delta, mask):
 
 
 def expensive_target(backend: FrozenWAFTBackend, original: FeaturePair,
-                     gt: Tensor, valid: Tensor) -> dict:
-    """Exactly512 per-pair dense AdamW updates, earliest strict best of0..512.
+                     gt: Tensor, valid: Tensor, *, steps: int = 512) -> dict:
+    """Fixed32/256/512 dense AdamW updates, earliest strict best of0..steps.
 
     GT directly supervises only the fifth native flow. All5 recurrent updates
     remain connected, while every original WAFT parameter stays frozen.
     The20% quality flag is retained from the expensive cache contract; it
     never skips a case or terminates optimization early.
     """
-    require(torch.is_grad_enabled(), "Dense512 generation needs autograd")
+    require(type(steps) is int and steps in EXPENSIVE_STEPS,
+            "Expensive target steps must be one of 32, 256, 512")
+    require(torch.is_grad_enabled(), "Dense target generation needs autograd")
     device = backend.validate()
     base = original.features.detach().clone()
     require(base.device == device and tuple(gt.shape[-2:]) == original.native_hw
@@ -303,7 +307,7 @@ def expensive_target(backend: FrozenWAFTBackend, original: FeaturePair,
     del initial
     best_delta, best_epe, best_step = delta.detach().clone(), baseline['EPE'], 0
     history, best_search_metrics = [], baseline
-    for step in range(513):
+    for step in range(steps + 1):
         optimizer.zero_grad(set_to_none=True)
         output = backend.solve(_field(base, sigma, delta, mask), original.native_hw, original.padding)
         require(len(output['flow']) == len(output['info']) == 5, "Exactly5 native updates required")
@@ -316,7 +320,7 @@ def expensive_target(backend: FrozenWAFTBackend, original: FeaturePair,
             best_epe, best_step, best_search_metrics = measured['EPE'], step, measured
             best_delta.copy_(delta.detach())
         history.append(dict(step=step, **measured))
-        if step == 512:
+        if step == steps:
             break
         loss = final_epe_loss(output['flow'][-1], gt, valid)
         loss.backward()
@@ -341,9 +345,9 @@ def expensive_target(backend: FrozenWAFTBackend, original: FeaturePair,
     qualified = (baseline['EPE'] > 0 and baseline['GT_MSE'] > 0
                  and 100*(1-best_metrics['EPE']/baseline['EPE']) >= 20.
                  and best_metrics['GT_MSE'] < baseline['GT_MSE'] and feature_mse > 0.)
-    return dict(method=EXPENSIVE_METHOD, original=base, teacher_features=selected,
+    return dict(method=EXPENSIVE_METHODS[steps], original=base, teacher_features=selected,
                 sigma=sigma, native_mask=mask, selected_delta=best_delta.detach(),
-                selected_step=best_step, optimizer_updates=512,
+                selected_step=best_step, optimizer_updates=steps,
                 native_hw=original.native_hw, padding=original.padding,
                 baseline_metrics=baseline, target_metrics=best_metrics,
                 selected_search_metrics=best_search_metrics, normalized_feature_MSE=feature_mse,

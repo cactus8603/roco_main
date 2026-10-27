@@ -137,6 +137,61 @@ def test_prepare_cheap_rejects_missing_visibility(tmp_path):
             B.prepare_dataset(tmp_path / "raw.json", tmp_path / "prepared", "source", "weights")
 
 
+class ScalarInputBackend(FakeBackend):
+    def validate(self):
+        return torch.device("cpu")
+
+    def solve(self,features,native_hw,padding):
+        value=features[0,0,0,1,1]
+        flow=torch.stack((value,value*0)).reshape(1,2,1,1).expand(1,2,*native_hw)
+        return dict(flow=[flow*0-100]*4+[flow],info=[flow*0]*5)
+
+
+@pytest.mark.parametrize("steps",[None,32,256,512])
+def test_expensive_preparation_budget_packet_manifest_and_load(tmp_path,steps):
+    image(tmp_path/"first.png",10);image(tmp_path/"second.png",20)
+    ground_truth(tmp_path/"flow.npz",visible=False)
+    data.write_json(tmp_path/"raw.json",{"samples":[dict(pair_id="pair",domain="kitti",
+        image1="first.png",image2="second.png",flow="flow.npz")]})
+    with patch.object(B,"load_backend",return_value=ScalarInputBackend()):
+        path=B.prepare_dataset(tmp_path/"raw.json",tmp_path/"prepared","source","weights",
+                               target_kind="expensive",target_steps=steps)
+    budget=512 if steps is None else steps
+    manifest=data.load_manifest(path)
+    packet={key:value.clone() if isinstance(value,torch.Tensor) else value
+            for key,value in data.load_packet(path.parent/"pair-000000-target.pt").items()}
+    assert manifest["target_steps"]==manifest["samples"][0]["teacher_updates"]==budget
+    assert packet["optimizer_updates"]==budget
+    assert packet["target_method"]==f"waft-dense-final-epe-{budget}-v1"
+    assert 0<=packet["selected_step"]<=budget
+    assert torch.equal(data.load_sample(path,0)["target"],packet["teacher_features"])
+    for wrong in (dict(target_steps=32 if budget!=32 else 256),
+                  dict(samples=[dict(manifest["samples"][0],teacher_updates=64)])):
+        with pytest.raises(ValueError,match="update count"):
+            data.load_sample(dict(manifest,**wrong),0)
+    # Rebind modified files so failures exercise metadata, not just SHA checking.
+    original_method=packet["target_method"]
+    packet["target_method"]="waft-dense-final-epe-64-v1"
+    torch.save(packet,path.parent/"pair-000000-target.pt")
+    with pytest.raises(ValueError,match="published method"):
+        data.prepare_manifest(path.parent/"samples.json",tmp_path/"wrong-method.json")
+    packet["target_method"]=original_method
+    packet["selected_step"]=budget+1
+    torch.save(packet,path.parent/"pair-000000-target.pt")
+    with pytest.raises(ValueError,match="Selected target step"):
+        data.prepare_manifest(path.parent/"samples.json",tmp_path/"wrong-selection.json")
+
+
+@pytest.mark.parametrize("kind,steps",[("expensive",64),("expensive",True),
+                                      ("expensive",32.0),("cheap",32)])
+def test_invalid_prepare_budget_rejected_before_loading_or_output(tmp_path,kind,steps):
+    with patch.object(B,"load_backend",side_effect=AssertionError("loaded WAFT")):
+        with pytest.raises(ValueError,match="target_steps"):
+            B.prepare_dataset("absent.json",tmp_path/"prepared","source","weights",
+                              target_kind=kind,target_steps=steps)
+    assert not (tmp_path/"prepared").exists()
+
+
 def test_inference_uses_no_gt_and_saves_every_native_step(tmp_path):
     image(tmp_path / "first.png", 10)
     image(tmp_path / "second.png", 20)

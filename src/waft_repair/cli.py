@@ -35,6 +35,8 @@ def parser() -> argparse.ArgumentParser:
     prepare.add_argument("--spec", required=True)
     prepare.add_argument("--output", required=True)
     prepare.add_argument("--target", choices=("cheap", "expensive"), default="cheap")
+    prepare.add_argument("--target-steps", type=int, choices=(32, 256, 512),
+                         help="Expensive target AdamW updates (default: 512); WAFT always uses 5 iterations")
     prepare.add_argument("--waft-source", required=True)
     prepare.add_argument("--waft-checkpoint", required=True)
     prepare.add_argument("--device", default="cpu")
@@ -69,6 +71,8 @@ def parser() -> argparse.ArgumentParser:
 def main(argv=None) -> None:
     command = parser()
     args = command.parse_args(argv)
+    if args.command == "prepare" and args.target_steps is not None and args.target != "expensive":
+        command.error("--target-steps is only valid with --target expensive")
     if args.threads < 1:
         command.error("--threads must be positive")
     import torch
@@ -129,7 +133,7 @@ def dispatch(args):
     if args.command == "prepare":
         from .backend import prepare_dataset
         manifest = prepare_dataset(args.spec, args.output, args.waft_source, args.waft_checkpoint,
-                                   device=args.device, target_kind=args.target)
+                                   device=args.device, target_kind=args.target, target_steps=args.target_steps)
         return {"manifest": str(manifest), "target": args.target}
     if args.command == "train":
         from .training import train

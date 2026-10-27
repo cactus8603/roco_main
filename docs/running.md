@@ -136,12 +136,16 @@ waft-repair prepare --spec examples/repair/images.json \
 
 ```bash
 waft-repair prepare --spec examples/repair/images.json \
-  --target expensive --output outputs/expensive-features \
+  --target expensive --target-steps 512 --output outputs/expensive-features \
   --waft-source external/WAFT --waft-checkpoint checkpoints/waft/zero-shot.pth \
   --device cuda:0
 ```
 
-便宜法額外編碼重建影像；昂貴法每筆固定做 512 次完整五步 WAFT 特徵最佳化，成本高很多。
+便宜法額外編碼重建影像；昂貴法以 `--target-steps 32`、`256` 或 `512` 選擇每筆
+AdamW 更新次數，省略時預設 512。每次候選仍執行完整五步 WAFT；只改外層步數，
+其餘 loss、optimizer、±0.25σ、padding、F0 與最早嚴格最佳候選的選取方式皆相同。
+不同步數使用不同輸出目錄，例如 `outputs/expensive-32-features`。
+較短預算不保證與 512 步相同的 target 品質；`--target-steps` 僅適用昂貴法。
 昂貴法不需要 `visible`，可以在 GT 轉換時省略 `--visibility`。
 兩法都不更新 WAFT 權重，也不會在這個步驟訓練修復模型。
 
@@ -149,6 +153,10 @@ Sintel Final 便宜 target 使用 [Final 影像清單範例](../examples/repair/
 `image1/image2` 是原 Final，`teacher_image1/teacher_image2` 是完整配對 Clean，
 `target_source_pair_id` 識別對應 Clean pair。必須使用相同配對、GT、有效像素與幾何。
 昂貴 target 始終從原輸入 features 開始。
+
+產出的 target 封包以 `optimizer_updates` 與對應 `target_method` 記錄實際步數；
+manifest 同時保存 `target_steps` 與每筆 `teacher_updates`，訓練前會核對一致。
+既有 512 步封包仍可沿用，`import-expensive` 保留原有已接受 512 步快取的匯入規則。
 
 ### 使用已有 input／target features
 

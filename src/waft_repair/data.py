@@ -10,6 +10,8 @@ from typing import Any
 import numpy as np
 import torch
 
+from .targets import EXPENSIVE_METHODS, EXPENSIVE_STEPS
+
 SCHEMA = "waft-repair-dataset"
 FEATURE_SCHEMA = "waft-repair-features"
 CHEAP_METHOD = "waft-visible-pull-rgb-v1"
@@ -204,6 +206,10 @@ def _validate_manifest(value: dict) -> None:
     require(value.get("schema") == SCHEMA, "Unsupported dataset schema")
     require(valid_sha(value.get("waft_checkpoint_sha256")), "A WAFT checkpoint SHA256 is required")
     require(value.get("target_kind") in ("cheap", "expensive"), "target_kind must be cheap or expensive")
+    if "target_steps" in value:
+        require(value["target_kind"] == "expensive" and type(value["target_steps"]) is int
+                and value["target_steps"] in EXPENSIVE_STEPS,
+                "target_steps must identify 32, 256, or 512 expensive updates")
     rows = value.get("samples")
     require(isinstance(rows, list) and bool(rows), "At least one explicit feature sample is required")
     ids = []
@@ -265,6 +271,17 @@ def load_sample(manifest: str | Path | dict, row: int | dict, *, require_target:
     expected_kind = manifest["target_kind"]
     expected_method = CHEAP_METHOD if expected_kind == "cheap" else EXPENSIVE_METHOD
     method = packet.get("target_method", packet.get("method"))
+    if expected_kind == "expensive":
+        updates = packet.get("optimizer_updates", 512)
+        require(type(updates) is int and updates in EXPENSIVE_STEPS,
+                "Expensive packet optimizer_updates must be 32, 256, or 512")
+        expected_method = EXPENSIVE_METHODS[updates]
+        for declared in (manifest.get("target_steps", updates), row.get("teacher_updates", updates)):
+            require(type(declared) is int and declared == updates,
+                    "Expensive target update count differs from the manifest")
+        if "selected_step" in packet:
+            require(type(packet["selected_step"]) is int and 0 <= packet["selected_step"] <= updates,
+                    "Selected target step must lie within its update budget")
     # Existing audited visible packets predate the portable metadata envelope.
     legacy_cheap = packet.get("arm") == {"name": "visible_pull_1", "kind": "pull", "alpha": 1.0, "encoder_calls": 1}
     recipe = None
@@ -272,7 +289,7 @@ def load_sample(manifest: str | Path | dict, row: int | dict, *, require_target:
         bound_method = packet.get("provenance", {}).get("fixed_method", {})
         require(bound_method.get("sha256") == row["target_method_file"]["sha256"], "Dense packet and bound method document differ")
         recipe = json.loads(_check_file(row["target_method_file"], base).read_text(encoding="utf-8"))
-    legacy_expensive = expected_kind == "expensive" and _dense_contract(packet, recipe)
+    legacy_expensive = expected_kind == "expensive" and updates == 512 and _dense_contract(packet, recipe)
     require(packet.get("target_kind") == expected_kind or (expected_kind == "cheap" and legacy_cheap)
             or legacy_expensive, "Target packet kind is missing or differs from the manifest")
     require(method == expected_method or (expected_kind == "cheap" and legacy_cheap) or legacy_expensive,

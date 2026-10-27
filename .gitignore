@@ -45,8 +45,7 @@ tmp_trash
 /operations/
 /outputs/
 
-# Keep internal research material local. Only the concise, curated progress
-# summary is part of the public repository.
+# Keep internal research material local. Publish only curated documentation.
 /research/
 /docs/*
 !/docs/training_progress/
@@ -67,3 +66,16 @@ tmp_trash
 # Re-apply cache/binary rules after the selected research-tree negations.
 **/__pycache__/
 **/*.py[cod]
+
+# Current WAFT feature-repair documentation and scalar evidence.
+!/docs/architecture.md
+!/docs/feature-repair.md
+!/docs/targets.md
+!/docs/results.md
+!/docs/usage.md
+!/docs/results/
+/docs/results/*
+!/docs/results/summary.csv
+!/docs/results/cases.csv
+!/docs/results/evidence.json
+

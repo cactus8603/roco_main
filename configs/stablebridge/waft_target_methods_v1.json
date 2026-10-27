@@ -1,0 +1,100 @@
+{
+  "schema": "waft-target-methods/v1",
+  "selection_date": "2026-10-27",
+  "selection_status": "fixed_by_user",
+  "cheap_method": "waft-visible-pull-rgb-v1",
+  "expensive_method": "waft-dense-final-epe-512-v1",
+  "model": {
+    "architecture": "WAFT-a2 / DAv2 encoder / vits iterative module",
+    "checkpoint_training": "chairs-things source-only",
+    "checkpoint_sha256": "1b49d1fc4513c6fa34a8de8f791dd8735d366d4b25d8dea47626a79056edd402",
+    "loaded_tensor_digest": "994e1164487d20779ec14a72d828a8d20433d00ac553ecaeb5d09aab554227ee",
+    "parameter_tensors": 508,
+    "parameters": 56932619,
+    "mode": "all eval, requires_grad=False, parameter gradients=None",
+    "dtype": "float32",
+    "padding_factor": 112,
+    "feature_shape": "1,2,64,Hpad/2,Wpad/2",
+    "prefix": "normalize_image -> Padder -> encoder and fnet[0] -> fmap_conv",
+    "TF32": false,
+    "cudnn_benchmark": false,
+    "cudnn_deterministic": true
+  },
+  "common_consumer": {
+    "feature_injection": "before hidden initialization and update1",
+    "flow_initialization": "zero at every solve",
+    "updates": 5,
+    "high_resolution_readouts": 5,
+    "evaluation": "fifth native flow; original finite-valid GT, including occluded and OOB endpoints",
+    "aggregation": "image-mean EPE primary; valid-pixel-pooled EPE also reported",
+    "per_case_GT_best_method_selection": false
+  },
+  "methods": {
+    "waft-visible-pull-rgb-v1": {
+      "mask": "GT valid AND finite flow AND complete inbounds endpoint AND known nonoccluded",
+      "KITTI_visibility": "flow_noc validity; flow values still come from flow_occ",
+      "Sintel_visibility": "occlusions == 0",
+      "reconstruction": "I1*(x)=I2(x+forward_GT(x)) on mask; elsewhere original I1",
+      "alpha": 1.0,
+      "interpolation": "CPU float64 bilinear, one cast to float32",
+      "second_RGB": "unchanged",
+      "target": "E(I1*), E(I2); complete padded paired field",
+      "teacher_RGB_domain": {
+        "kitti": "original KITTI pair",
+        "sintel_clean": "original Clean pair",
+        "sintel_final": "corresponding complete Clean pair, both frames"
+      },
+      "extra_encoder_calls_if_teacher_F0_cached": 1,
+      "generation_WAFT_refinement_calls": 0,
+      "generation_backward_calls": 0,
+      "optimizer_updates": 0,
+      "sigma_output_projection": null,
+      "unsupported_RGB": "retain original; encoded context and padding may still change",
+      "acceptance": "per-domain mean EPE improvement; regressions retained and reported"
+    },
+    "waft-dense-final-epe-512-v1": {
+      "teacher_RGB_domain": "same render as original input, including native Final for Sintel Final",
+      "parameterization": "Fstar=F0+sigma*delta on native feature centers; original padding retained",
+      "sigma": "per-channel RMS of original native features, both frames, float64 reduction",
+      "sigma_floor": "0.01*lower_median_64_channel_RMS + 1e-8",
+      "delta_initialization": 0.0,
+      "delta_bound": [
+        -0.25,
+        0.25
+      ],
+      "objective": "float32 vector EPE of only fifth native flow against fixed valid GT",
+      "gradient_graph": "full recurrent-flow and sampling-coordinate feedback; delta only",
+      "optimizer": {
+        "name": "AdamW",
+        "learning_rate": 0.001,
+        "betas": [
+          0.9,
+          0.999
+        ],
+        "epsilon": 1e-08,
+        "weight_decay": 0.0,
+        "foreach": false,
+        "fused": false
+      },
+      "gradient_clip": {
+        "global_norm": 1.0,
+        "norm_and_multiply_dtype": "float64",
+        "denominator_epsilon": 1e-06,
+        "copy_gradient_to": "float32"
+      },
+      "projection": "after every AdamW step clamp delta, then zero delta on padding",
+      "optimizer_updates": 512,
+      "warmup_updates": 0,
+      "early_stop": false,
+      "selection": "earliest strict minimum FP64-scored final EPE including F0 and states0..512",
+      "quality_flag": "at least20% EPE reduction AND strict final-flow component MSE reduction AND positive native normalized feature MSE",
+      "quality_failure_policy": "retain target and qualified=false; never skip, retry or remove from statistics"
+    }
+  },
+  "publication_scope": {
+    "repair_model_training": false,
+    "full1752_cheap_cache_generated_by_this_publication": false,
+    "existing_expensive_cache_workers_modified": false,
+    "feature_binaries_and_official_weights_in_GitHub": false
+  }
+}

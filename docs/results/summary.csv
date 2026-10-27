@@ -1,0 +1,6 @@
+method,domain,population,case_id,baseline_EPE,target_EPE,reduction_percent,baseline_pooled_EPE,target_pooled_EPE,improved_cases,regressed_cases,evidence
+waft-visible-pull-rgb-v1,kitti,160,,2.9495044840285995,2.5191794812130825,14.589738891590187,3.0132529628372398,2.552226413290213,152,8,full_native5_saved_only_audit
+waft-visible-pull-rgb-v1,sintel_clean,100,,1.5619699268621343,1.1450070848993887,26.694677969913847,1.5619699268621356,1.145007084899389,95,5,full_native5_saved_only_audit
+waft-visible-pull-rgb-v1,sintel_final,100,,5.114360640678846,1.1450070848993887,77.61192130660133,5.114360640678846,1.145007084899389,99,1,paired_clean_target_flow_reuse
+waft-dense-final-epe-512-v1,kitti,1,kitti2015/000137,0.8304119818224727,0.039074390583618536,95.29457769890753,,,1,0,two_exposed_TRAIN_cases_fixed512_independent_audit
+waft-dense-final-epe-512-v1,sintel_final,1,sintel/final/market_5/frame_0029,18.940211479991138,4.02383841225686,78.7550502458342,,,1,0,two_exposed_TRAIN_cases_fixed512_independent_audit

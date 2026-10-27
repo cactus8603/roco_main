@@ -79,3 +79,8 @@ tmp_trash
 !/docs/results/cases.csv
 !/docs/results/evidence.json
 
+
+# Curated data-location inventory; binary data stays local.
+!/docs/data-inventory.md
+!/docs/data-inventory.csv
+

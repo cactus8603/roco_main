@@ -64,8 +64,10 @@ Sintel Final 的便宜 target 由**對應 Clean 的完整雙幀影像**製作，
 - [修復模型](docs/feature-repair.md)：模型輸入輸出、局部與跨幀修復、訓練損失。
 - [兩種 target 的製作方法](docs/targets.md)：RGB 重建、特徵最佳化與各資料集的來源。
 - [結果與驗證範圍](docs/results.md)：完整統計、退步案例數與證據資料。
+- [資料存放清單](docs/data-inventory.md)：實際磁碟路徑、原始資料、features、targets 與修復輸出。
 - [程式使用方式](docs/usage.md)：目前公開的 target API、外部依賴與測試方法。
 
 此 repository 的當前入口是上述 WAFT 特徵修復流程。舊研究程式保留在原路徑，
 修復模型的完整訓練與推論工具尚未整理成公開套件；目前公開的可重用程式涵蓋 target 製作與凍結 WAFT 的特徵接入。
 資料集、官方權重與大型特徵檔需另行準備。
+

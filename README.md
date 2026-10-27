@@ -1,5 +1,12 @@
 # RoCo / StableBridge
 
+## WAFT target features：固定便宜／昂貴版本
+
+便宜版固定為非遮擋區 GT-RGB 完整重建（`waft-visible-pull-rgb-v1`）；昂貴版保留逐筆 dense-512 最後一步 EPE 優化（`waft-dense-final-epe-512-v1`）。兩者使用相同凍結 WAFT、完整5次更新。便宜版在 KITTI160／Clean100／Final100 的平均 target EPE 均下降；Final target 由對應完整 Clean pair 生成。這是 exposed TRAIN 離線 target 的結果，尚非修復模型或 held-out 效益。
+
+[製作流程、API、結果與驗證範圍](docs/waft_targets_v1/README.md) · [固定設定](configs/stablebridge/waft_target_methods_v1.json)
+
+
 RoCo 是一個針對 optical flow 與 stereo correspondence 的研究型框架。核心問題不是單純
 增加更多 restoration tools，而是讓每個 action family 先提出適合的 strength／output
 beta，再以共同的 downstream gain、harm、risk 與 execution cost 進行全域競爭。
@@ -385,3 +392,4 @@ choice-family calibration 與可重播 receipts 支持。
 部分 frozen execution／source receipts 保留建立證據時的絕對路徑與 executable identity；
 這些欄位是 provenance，不是可攜式預設值。新環境應建立自己的 dataset/model registry，
 不能直接把舊機器的 authority receipt 當作有效授權。
+

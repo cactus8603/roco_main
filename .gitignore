@@ -67,3 +67,12 @@ tmp_trash
 # Re-apply cache/binary rules after the selected research-tree negations.
 **/__pycache__/
 **/*.py[cod]
+
+# Curated WAFT target recipes and scalar evidence; keep binary artifacts ignored.
+!/docs/waft_targets_v1/
+/docs/waft_targets_v1/*
+!/docs/waft_targets_v1/README.md
+!/docs/waft_targets_v1/results.csv
+!/docs/waft_targets_v1/cases.csv
+!/docs/waft_targets_v1/evidence.json
+

@@ -1,3 +1,6 @@
+> 歷史 target 製作流程：目前 3.00M 原生光流訓練不使用本頁的離線教師。
+> 目前主流程請看 [原生訓練指南](native-training.md)。
+
 # Target features 的兩種製作方式
 
 Target features 是修復模型的離線訓練目標。兩種製法都使用 GT 與完全凍結的 WAFT，

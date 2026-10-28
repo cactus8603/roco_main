@@ -1,0 +1,51 @@
+{
+  "schema": "native-repair-intermediate-results/v1",
+  "status": "FIXED_EPOCH16_INTERMEDIATE_NOT_FINAL",
+  "epochs": 16,
+  "completed_updates": 2560,
+  "planned_updates": 5120,
+  "seed": 20261028,
+  "model_parameters": 3000576,
+  "summary": {
+    "init": {
+      "train": {
+        "cases": 160,
+        "valid_pixels": 14783443,
+        "EPE_case_equal": 2.9495044840285995,
+        "native5_MoL_case_equal": 6.503161988542585,
+        "checkpoint_sha256": "ea98498e9ddb292f09d435fc18592ffe9f68ac14861400d3f54e0386c1c00c13"
+      },
+      "dev": {
+        "cases": 40,
+        "valid_pixels": 3591693,
+        "EPE_case_equal": 4.632284247239788,
+        "native5_MoL_case_equal": 7.559639153586166,
+        "checkpoint_sha256": "ea98498e9ddb292f09d435fc18592ffe9f68ac14861400d3f54e0386c1c00c13"
+      }
+    },
+    "E016": {
+      "train": {
+        "cases": 160,
+        "valid_pixels": 14783443,
+        "EPE_case_equal": 1.257547318863265,
+        "native5_MoL_case_equal": 4.597857817997129,
+        "checkpoint_sha256": "8f4e647e42ae2b3f7e3b625808f434496c1bdb96a9d7495208a8f683aec4bbc0"
+      },
+      "dev": {
+        "cases": 40,
+        "valid_pixels": 3591693,
+        "EPE_case_equal": 3.519644426587187,
+        "native5_MoL_case_equal": 6.2839519531882955,
+        "checkpoint_sha256": "8f4e647e42ae2b3f7e3b625808f434496c1bdb96a9d7495208a8f683aec4bbc0"
+      }
+    }
+  },
+  "evaluation_index_snapshot_sha256": "c51a3cc0ecabff03c5a1cdc48999c4b9c859503a403b0f9039847536f1a7f2a3",
+  "aggregation": "Case-equal full native GT-valid source pixels; no case exclusions. CSV all5 values reaggregated independently from saved scalar score records.",
+  "limits": [
+    "Same historical dev40; not official KITTI hidden test",
+    "One seed and intermediate fixed checkpoint",
+    "Reaggregation is arithmetic checking, not a second raw-GT/flow evaluation",
+    "No current full160 E032 completion claim"
+  ]
+}

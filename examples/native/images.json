@@ -1,0 +1,21 @@
+{
+  "schema": "waft-native-images/v1",
+  "samples": [
+    {
+      "id": "kitti2015/000000",
+      "split": "train",
+      "image1": "../../data/kitti/training/image_2/000000_10.png",
+      "image2": "../../data/kitti/training/image_2/000000_11.png",
+      "ground_truth": "../../data/kitti/training/flow_occ/000000_10.png",
+      "ground_truth_format": "kitti"
+    },
+    {
+      "id": "kitti2015/000003",
+      "split": "dev",
+      "image1": "../../data/kitti/training/image_2/000003_10.png",
+      "image2": "../../data/kitti/training/image_2/000003_11.png",
+      "ground_truth": "../../data/kitti/training/flow_occ/000003_10.png",
+      "ground_truth_format": "kitti"
+    }
+  ]
+}

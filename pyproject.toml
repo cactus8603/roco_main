@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stablebridge"
-version = "0.1.0"
-description = "Frozen WAFT feature repair with offline reconstruction and optimized targets"
+version = "0.2.0"
+description = "Motion-aligned feature repair trained through a fully frozen native WAFT"
 requires-python = ">=3.10"
 dependencies = ["numpy", "scipy", "torch", "opencv-python", "h5py", "Pillow"]
 
@@ -26,4 +26,7 @@ pythonpath = ["src"]
 
 [tool.setuptools.data-files]
 "share/waft-repair/licenses" = ["third_party/feature_repair/NOTICE", "third_party/feature_repair/SLIM_LICENSE", "third_party/feature_repair/MAMBA_LICENSE", "third_party/feature_repair/WAFT_LICENSE"]
+
+[tool.setuptools.package-data]
+"waft_repair.motion" = ["kitti_split.json"]
 

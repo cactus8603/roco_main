@@ -1,119 +1,84 @@
-# 程式介面與資料格式
+# 命令與資料格式
 
-從安裝到執行的完整命令見 [執行指南](running.md)。
-可重用程式放在 [`src/waft_repair`](../src/waft_repair)，不依賴本機研究目錄或背景工作。
+目前的主流程是 `waft-repair native-*`；完整操作順序見 [原生光流訓練指南](native-training.md)。
+程式可獨立安裝，不依賴本機 operations、背景工作或私人資料路徑。
 
-## 模組
+## 目前命令
 
-| 程式 | 用途 |
+| 命令 | 用途 |
 |---|---|
-| `model.py`、`context.py` | 完整雙幀、局部與跨幀的無界 residual 修復模型 |
-| `data.py` | 特徵封包、manifest、原始 RMS、便宜／昂貴快取匯入 |
-| `ground_truth.py` | KITTI PNG／Sintel FLO 轉換 |
-| `training.py` | Feature MSE 訓練、續訓與特徵推論 |
-| `checkpoint.py` | 權重、optimizer、RNG 與雜湊保存／載入 |
-| `backend.py` | 嚴格載入官方凍結 WAFT、影像資料準備及光流推論 |
-| `targets.py` | 非遮擋 RGB 重建與可選 32／256／512 次特徵最佳化 |
-| `cli.py` | `waft-repair` 命令 |
+| `doctor` | 核對固定官方 WAFT 來源、checkpoint 與完整 state |
+| `native-split-kitti` | 用固定公開 160／40 ID 建立原始 KITTI 影像清單 |
+| `native-prepare` | 從 RGB 快取 F0、四層特徵、原始 baseline 與對齊依據 |
+| `native-train` | 原生五步 MoL 訓練與續訓，只更新修復器 |
+| `native-evaluate` | 固定 checkpoint 的 train／dev／all 光流評估 |
+| `native-infer` | 不讀 GT，由兩張影像輸出修復後原尺寸光流 |
+| `native-import-checkpoint` | 將相同原生模型的既有 full checkpoint 匯為 portable repair model |
+| `convert-gt` | KITTI PNG／Sintel FLO 轉成統一數值 NPZ |
 
-## 修復模型
+各命令的完整參數可用 `waft-repair COMMAND --help` 查看；也可寫成
+`python -m waft_repair COMMAND ...`。
 
-```python
-from waft_repair import FeatureRepair
+## 原始影像清單
 
-model = FeatureRepair(backend="reference", seed=7)
-# original: detached FP32 [B,2,64,H,W]
-# sigma: positive original-only FP32 [64] or [B,64]
-# native_mask: bool [1|B,1,1,H,W], geometry metadata
-repaired = model(original, sigma, native_mask)
-```
-
-Reference 適合小型 CPU tensors；完整影像需明確選擇 `backend="native"` 與 CUDA。
-模型 forward 不接收 target、GT、RGB 或 WAFT，輸出包含全部雙幀 padding。
-
-## 訓練清單
-
-[範例 JSON](../examples/repair/features.json) 的結構是：
+[`examples/native/images.json`](../examples/native/images.json)使用：
 
 ```json
 {
-  "schema": "waft-repair-dataset",
-  "waft_checkpoint_sha256": "1b49d1fc4513c6fa34a8de8f791dd8735d366d4b25d8dea47626a79056edd402",
-  "target_kind": "cheap",
+  "schema": "waft-native-images/v1",
   "samples": [
     {
-      "pair_id": "street-pair",
-      "domain": "kitti",
-      "native_hw": [375, 1242],
-      "padding": [51, 51, 36, 37],
-      "input_file": "street-input.pt",
-      "target_file": "street-target.pt"
+      "id": "kitti2015/000000",
+      "split": "train",
+      "image1": "first.png",
+      "image2": "second.png",
+      "ground_truth": "flow.npz",
+      "ground_truth_format": "npz"
     }
   ]
 }
 ```
 
-這是檔案格式示例，影像幾何必須填入自己的實際值。
-`target_kind` 為 `cheap` 或 `expensive`；`domain` 為 `kitti`、`sintel-clean`、`sintel-final` 或 `synthetic`。
-相對路徑由清單所在位置解析。`manifest` 命令核對內容後，將來源路徑、bytes、SHA-256 綁入正式清單。
+相對路徑以 JSON 所在位置解析。`split` 是 `train` 或 `dev`；`id` 唯一。
+GT format 支援 `kitti`、`sintel`、`npz`，圖像和 GT 幾何需一致。
+NPZ 的 flow 是 `float32[H,W,2]`、valid 是 `bool[H,W]`，以 `allow_pickle=False` 讀取。
+推論命令不讀這份清單或 GT。
 
-Input 封包使用 `features`，target 封包使用 `teacher_features`，皆為 CPU FP32 `[1,2,64,Hf,Wf]`。
-兩種封包均包含 `pair_id`、`domain`、`native_hw`、`padding`、`waft_checkpoint_sha256`；
-target 另包含 `target_kind` 與對應製法的 `target_method`。
-昂貴版的 `target_method` 為 `waft-dense-final-epe-{steps}-v1`，
-`optimizer_updates` 記錄 32、256 或 512，`selected_step` 位於 0 到該預算之間。
-`prepare` 產生的 manifest 另保存 `target_steps` 與每筆 `teacher_updates`；
-載入時會核對步數與方法一致。既有 512 步封包仍相容。
-若同一個昂貴封包保存兩份特徵，可在清單指定 `input_key="original"` 與 `target_key="teacher_features"`。
+`native-prepare` 產生的 manifest 由工具建立，包含資料、幾何、雜湊與 WAFT 綁定。
+不要手動將舊 target-feature manifest 改名後交給 native-train。
 
-`.pt` 透過 `weights_only=True` 載入，只接受 tensors 與基本 metadata。
-`.npz` 使用同名數值陣列，以及 JSON 字串 `metadata`，並以 `allow_pickle=False` 載入。
-σ 與 native mask 會由原始特徵重新計算，不使用 target 估計尺度。
+## 模型介面
 
-對 Final 的便宜 target，清單還需 `target_source_pair_id`；target 封包識別對應 Clean pair，
-完整保留兩張 Clean target 特徵。第二張與 Final 不同是允許且必要的配對監督行為。
-KITTI／Clean 的便宜 target 第二張則必須完整等於原始第二張特徵。
+目前的 `MotionFeatureRepair` 與 geometry、native consumer、loss、training 置於
+[`src/waft_repair/motion`](../src/waft_repair/motion)。
+模型接收 detached FP32 F0 `[B,2,64,Hf,Wf]`、正值 sigma `[B,64]`、
+四層 observations、固定 motion prior 與 native／padding 幾何；輸出完整同形 Fhat。
 
-## Python 訓練與推論
-
-```python
-from waft_repair.data import prepare_manifest
-from waft_repair.training import train, infer_features
-from waft_repair.backend import infer_images
-
-prepare_manifest("data/features.json", "data/train.json")
-train("data/train.json", "outputs/repair", device="cuda:0", backend="native", epochs=10)
-infer_features("outputs/repair/checkpoint.pt", "data/input.pt", "outputs/repaired.pt",
-               device="cuda:0", backend="native")
-infer_images("outputs/repair/checkpoint.pt", "first.png", "second.png", "outputs/flow.npz",
-             "external/WAFT", "checkpoints/waft/zero-shot.pth", device="cuda:0", backend="native")
+```text
+Fhat = F0 + sigma × (global + spatial_raw - mean_fullpad_HW(spatial_raw))
 ```
 
-這些呼叫使用已準備好的本機檔案；不自動下載權重、啟動背景訓練或分配共用 GPU。
-訓練只使用修復模型；影像推論不需要 GT 或 target。
+GT 不在模型 forward 中；native consumer 用輸出特徵重建 hidden，再從零光流完成原生五步。
+`return_aux` 可提供 global／spatial delta 與對齊支援資訊。
+這些不是經校準的錯誤機率，模型沒有錯誤分類／根因預測頭。
+實作細節與精確座標見 [架構](architecture.md)及 [模型](feature-repair.md)。
 
-## Target API
+## Checkpoint
 
-```python
-from waft_repair.targets import cheap_target, expensive_target
-from waft_repair.backend import load_backend
+- `checkpoint.pt` 是同一份資料與設定的完整續訓狀態。
+- `model.pt` 是 portable repair 模型，供 native-infer／native-evaluate 使用。
+- `native-import-checkpoint` 只匯入相同模型的 repair state，不嫁接不同 run 的 optimizer。
 
-backend = load_backend("external/WAFT", "checkpoints/waft/zero-shot.pth", device="cuda:0")
-original = backend.encode_pair(rgb_pair)
-cheap = cheap_target(backend, rgb_pair, gt_cpu, valid_cpu, visible_cpu, original=original)
-expensive = expensive_target(backend, original, gt_cpu.to("cuda:0"), valid_cpu.to("cuda:0"),
-                             steps=32)  # 32, 256, 512；省略時為 512
-```
+PT 使用受限制的 tensor／基本 metadata 載入；NPZ 不讀 pickle。
+官方 checkpoint 與原始資料不隨套件分發，CLI 不會自動下載模型或啟動背景訓練。
 
-昂貴 API 必須在 autograd 啟用時呼叫，WAFT 權重仍保持凍結。
-CLI 對應 `prepare --target expensive --target-steps 32`；
-`prepare_dataset(..., target_kind="expensive", target_steps=32)` 可用於影像批次準備。
-選項只改外層 AdamW 步數，WAFT 每次仍完整執行 5 次更新。
-Final 的便宜 target 請傳入完整配對 Clean RGB 與其原始特徵，原 Final input features 另行保存。
-舊的固定 target API 路徑保留相容性；新流程統一使用上述可讀模組。
+## 歷史介面與授權
 
-## 授權
+原有 `FeatureRepair`、`prepare`、`train`、`infer-features`、`infer-images`、
+`cheap_target`／`expensive_target` 仍對應較早的 3.92M target-feature MSE 流程。
+其資料格式、模型、loss 與目前不同，詳見 [歷史 API](legacy-usage.md)及
+[歷史訓練指南](legacy-running.md)。
 
-本地修復實作包含 SLiM（MIT）與 Mamba（Apache-2.0）的改寫部分，
-特徵接入遵循 WAFT（BSD-3-Clause）。完整授權與來源列在
-[`third_party/feature_repair`](../third_party/feature_repair)，並隨 wheel 一起分發。
+完整授權與來源保留於 [`third_party/feature_repair`](../third_party/feature_repair)。
+其中 Mamba／SLiM 的授權用於保留的歷史程式；目前 motion 修復器不執行這些 extension。
+WAFT 原碼與權重沿用官方授權，使用前請閱讀對應條款。

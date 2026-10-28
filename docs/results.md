@@ -1,65 +1,58 @@
 # 結果與驗證範圍
 
-以下數值衡量 **target features 本身的光流品質**：
-將 target 直接放回同一個凍結 WAFT，完成全部 5 次更新，再對 GT 評分。
-資料均來自已使用的訓練資料，修復模型預測與未見資料泛化需要另外驗證。
+目前主流程使用完整凍結的 source-only WAFT，訓練 3,000,576 參數修復器，
+以完整五步原生 MoL loss 更新。這與較早的 target-feature MSE 模型不同。
 
-## 便宜 target
+## 目前模型的固定中途評估
 
-| 資料 | 對數 | 原始 EPE | Target EPE | 降幅 | 改善 | 退步 |
-|---|---:|---:|---:|---:|---:|---:|
-| KITTI | 160 | 2.949504484 | 2.519179481 | 14.5897% | 152 | 8 |
-| Sintel Clean | 100 | 1.561969927 | 1.145007085 | 26.6947% | 95 | 5 |
-| Sintel Final，使用配對 Clean target | 100 | 5.114360641 | 1.145007085 | 77.6119% | 99 | 1 |
+以下是固定第 16 epoch checkpoint 的**逐影像平均最終 EPE**，單位像素，越低越好：
 
-EPE 單位為像素，越低越好；表中使用逐影像平均。
-KITTI 的有效像素 pooled EPE 為 `3.013252963 → 2.552226413`；
-Clean 與 Final 的 pooled 數值與上表逐影像平均一致至所列小數位。
-
-KITTI 固定使用 160 對訓練影像。Sintel 的 100 對以固定 seed 分層取樣，涵蓋 18 個訓練場景，
-Clean／Final 使用同一組影像配對。所有退步樣本均保留在分母內。
-
-Final 的便宜 target 來自完整配對 Clean 重建影像。
-逐對核對 GT、有效像素與幾何一致後，共用已完成檢驗的 Clean target 光流與分數。
-這組結果不能解讀為直接重建 Final RGB 的效果。
-
-## 昂貴 target
-
-目前公開的是兩筆完整核驗的個案：
-
-| 資料與案例 | 原始 EPE | Target EPE | 選中更新次數 |
+| 資料 | 對數 | 原始 WAFT | 修復模型，第 16 epoch |
 |---|---:|---:|---:|
-| KITTI，影像 000137 | 0.830411982 | 0.039074391 | 512 |
-| Sintel Final，market_5，第 29 幀 | 18.940211480 | 4.023838412 | 483 |
+| KITTI TRAIN | 160 | 2.949504 | 1.257547 |
+| KITTI dev | 40 | 4.632284 | 3.519644 |
 
-兩筆皆完成固定 512 次更新，再從完整候選中選出最低 EPE。
-Sintel Final 個案由原 Final 特徵開始。
-這兩筆與便宜版的完整人口不同，不能用來做兩法的資料集平均排名。
+可回讀 [全部 200 筆的 init／epoch16 標量](results/native-epoch16-cases.csv)與
+[人口、checkpoint SHA 及聚合證據](results/native-epoch16-evidence.json)。
+這份重算核對彙總算術，沒有再執行一次原始 GT／光流評估。
 
-## 修復模型與計算成本
+這是固定 KITTI 160 TRAIN／40 dev、單一 seed 訓練的中途監測；
+固定第 32 epoch 的訓練及最終獨立核驗尚不能由此表宣稱完成。
+中途評估使用完整 200 筆分母，不是 online minibatch 的更新前 loss 或擬合分數。
 
-修復模型的結構已實作，尚無完成核驗的學習後光流改善結果。
-Target 品質顯示可供學習的監督方向；特徵損失是否下降，以及模型輸出的光流是否改善，
-必須分別以實際訓練與完整光流評估確認。
+40 dev 與 160 TRAIN 在案例、原始 RGB／GT 及已核對來源群組沒有重疊；
+但 dev 已被歷史研究使用，不是官方隱藏 KITTI test，也不是全專案從未曝光資料。
+這張表不能支持跨資料集、官方 leaderboard 或多 seed 的結論。
+公開程式未捆綁目前訓練後權重；程式移植驗證與上述原生 run 的效果分別記錄。
 
-便宜版在 KITTI 的歷史生成時間中位數約為 **0.3507 秒／對**，
-包含 CPU RGB 重建與變動影像的單張編碼，不包含原始特徵提取、存檔與完整光流評估。
-昂貴版每對需要 512 次完整光流反向傳播與最佳化；目前沒有相同完整人口的端到端速度比較。
+## Loss、EPE 與錯誤追蹤
 
-## 公開資料與核驗
+原生 MoL loss、平均 EPE 與 Fl outlier 比例是不同量，沒有逐步同降保證。
+目前模型雖然可拆解 global／spatial delta，但完整的空間修復收益、傷害與分支原因
+仍需保存光流、固定來源像素及控制介入評估。不能把 delta 圖當成經校準的錯誤機率。
 
-- [彙總結果 CSV](results/summary.csv)：固定樣本彙總統計與昂貴版兩筆結果。
-- [逐案例 CSV](results/cases.csv)：便宜版全部 360 筆與昂貴版兩筆，包含退步案例。
-- [證據摘要](results/evidence.json)：原始核驗報告的用途、byte 數與 SHA-256，以及公開 CSV 的雜湊。
+五步歷程可解釋版與 where／why／how 設計是另外的研究版本，不是這裡第 16 epoch
+結果所使用的模型；它們的小樣本結果不能混入本表。
 
-原生結果已完成獨立的 saved-only GT／RGB／optimizer 審核。
-公開 target 程式另有 12 項 CPU tests，並與原始凍結實作核對完整光流輸出、特徵梯度、
-σ、全部最佳化候選分數與選中修正量；另有四筆已保存影像的 RGB 重建 bytes 核對。
-這些程式移植驗證沒有新增預訓練 WAFT 的 GPU 成效或速度測量。
+## 成本定義
 
-權重、RGB、GT arrays、完整 feature tensors 與執行 logs 保留在本機，不放入 repository。
+完整影像推論成本為：
 
-修復模型與訓練／推論工具已公開；另以小型 CPU 合成資料驗證完整訓練、續訓與權重重載，
-並以完整官方 WAFT checkpoint 跑通小尺寸 RGB → target → 修復更新 → 無 GT 影像推論。
-這些是程式可執行性及移植驗證，未新增完整資料集的修復模型成效結論。
+```text
+原始 encoder／prefix + baseline 五步 + prior／對齊處理
++ 修復器 + repaired 五步
+```
 
+3.00M 參數只是修復器的參數量。修復器單獨 latency 或靜態 MAC census 不包含 baseline
+五步、資料搬移、正規化、重採樣與其他處理，不能當成整體方法快於／小於 WAFT 的證明。
+訓練快取 prefix／baseline 可省去重複工作；推論比較仍需按完整流程量測。
+
+## 較早的 target-feature MSE 與教師結果
+
+[歷史結果文件](legacy-results.md)與 [既有公開 CSV](results/summary.csv)記錄的是
+便宜／昂貴 target features 本身的品質，以及當時的移植驗證範圍。
+它們不是目前 3.00M 模型的結果，不可把教師直接輸入 WAFT 的收益歸給修復器。
+[逐案例 CSV](results/cases.csv)與 [證據摘要](results/evidence.json)保留原始來源。
+
+原始 RGB、GT arrays、WAFT 權重、feature tensors、訓練 checkpoint 與執行 logs
+不放入 repository。資料位置清單是歷史盤點，見 [資料清單](data-inventory.md)。

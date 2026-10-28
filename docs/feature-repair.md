@@ -1,77 +1,72 @@
-# 修復模型
+# Motion-aligned 特徵修復模型
 
-修復模型接收凍結 WAFT 的原始雙幀特徵，預測一個修正量，輸出修復後的特徵。
-訓練時只更新這個模型；完成後，輸出直接送回原本凍結的 WAFT。
+目前模型是原生光流監督的 **3,000,576 參數、161 個 state tensors** 修復器。
+訓練由完整凍結 WAFT 的五步輸出計算 loss，沒有 target-feature MSE 輔助項。
+較早的 3,923,200 參數模型見 [歷史版本](legacy-feature-repair.md)。
 
-## 輸入與輸出
+## 輸入
 
-令原始特徵為 F，修正量為 Δ，模型輸出為：
+修復器使用完整雙幀 F0、原始特徵的固定逐通道尺度 sigma，以及同次凍結 encoder 的
+CNN pre S2／S4 與 DAv2 block 6／12。motion prior 由原始 WAFT 第五步 native flow／info
+製作，包含對齊端點、有效支援、forward splat 權重與碰撞質量。
 
-```text
-修復特徵 = 原始特徵 + 模型預測的修正量
-```
+所有訊號都能在無 GT 推論取得。GT、昂貴教師、便宜教師、pair ID 與 dev split 均不進模型 forward。
+目前模型只讀 baseline **第五步**；五步軌跡分支與錯誤原因／收益預測頭不屬於這個訓練版本。
 
-輸入與輸出形狀相同，都是 `[batch, 2, 64, feature_height, feature_width]`，
-涵蓋兩個影格的完整填補特徵網格。
-模型使用原始特徵算出的固定逐通道尺度 σ 做輸入正規化；不接收 GT 或 target features。
+## 處理方式
 
-輸出的修正量不經 tanh、硬裁切或 σ 縮放，也沒有 ±0.25σ 的幅度限制。
-昂貴 target 自己的製作限制仍保留，詳見 [Target 製作](targets.md)。
+模型以雙幀共享的 directional convolutional U-shape 處理 stride 4／8／16 上下文，
+再回到 stride 2 做細部修復。對齊後的跨幀資訊與自身特徵共同參與修正。
 
-## 目前的模型設計
+除非線性上下文路徑外，模型保留兩條原始幅度路徑：
 
-修復模型有兩條相加的路徑：
+- 原始 `F0/sigma` 的完整 64-channel linear head。
+- stride 4 對齊後的 signed／absolute 跨幀差異，經 128→64 linear head 回到細網格。
 
-| 路徑 | 處理方式 | 目的 |
-|---|---|---|
-| 跨幀上下文 | 讓兩個影格的特徵交換資訊 | 根據影像對的共同內容判斷修正方向 |
-| 局部修復 | 在原特徵解析度上經過兩個局部殘差區塊，兩個影格共用同一組局部路徑權重 | 保留細部空間修正能力 |
+這兩條路徑保留未被逐位置 LayerNorm 消除的幅度資訊。
+對齊的 gather／splat、跨層位置與 padding 定義見 [架構文件](architecture.md)。
 
-局部路徑每個區塊包含 3×3 depthwise convolution、逐位置通道 LayerNorm 與
-1×1 通道擴張／投影；兩個區塊形成 5×5 的局部感受野。
-目前模型共有 **3,923,200 個可訓練參數**。
-
-兩條路徑的輸出層皆以零初始化，因此模型剛建立時會完整保留原始特徵。
-之後透過學習加入修正，兩個影格與填補區域皆可調整。
-
-## 訓練損失
-
-目前使用完整雙幀網格的尺度正規化均方誤差：
+## 輸出
 
 ```text
-loss = mean(((repaired_features - target_features) / sigma)²)
+spatial = spatial_raw - mean_full_padded_HW(spatial_raw)
+delta = global + spatial
+Fhat = F0 + original_sigma × delta
 ```
 
-平均涵蓋兩個影格、全部通道與全部空間位置，包含填補區域。
-σ 由原始特徵的原圖範圍計算逐通道 RMS，保持固定；它用於輸入及損失的正規化。
-GT 與 target 不參與 σ 的估計。
+`global` 是每筆、每幀、每通道的空間常數；`spatial` 在完整 padded 網格上均值為零。
+完整輸出與 F0 同形 `[B,2,64,Hp/2,Wp/2]`，兩幀及 padding 都可調整。
+修正無 tanh、硬裁切或 ±0.25sigma 限制。
 
-當便宜 target 保持第二張特徵不變時，損失仍涵蓋第二張特徵，
-讓模型同時學習第一張的修復與第二張的保留。
-Sintel Final 的便宜 target 則是完整配對 Clean 特徵，兩張皆提供監督。
+sigma 由原始雙幀 native centers 的 FP64 RMS 計算，並套用固定數值下限，
+之後轉為 FP32、保持 detached。它不是由 GT、教師特徵或修復後特徵重新估計。
+輸出 heads 零初始化，因此初始修復保持原始 F0；後續才學習非零 delta。
 
-## 訓練與最終評估
+## 損失與訓練
 
-目前的訓練路徑讀取已保存的 input／target features，只對修復模型做反向傳播，
-不直接使用 GT 光流損失，也不在這個訓練圖中執行 WAFT。
+Fhat 在 hidden 初始化之前放回 WAFT。每次從零光流執行完整五步，
+沿用官方 Mixture-of-Laplace 目標與 `gamma=0.85` 的五步序列加權：
 
-評估時，再把模型預測的完整雙幀特徵放回凍結 WAFT，執行完整 5 次光流更新，
-以最後的原尺寸光流對 GT 計算 EPE。
-同時比較原始特徵、target features 與模型修復特徵三者的光流結果。
+```text
+loss = sum(gamma ** (4-k) × native_MoL(flow[k], info[k], GT, valid)
+           for k in range(5))
+```
 
-特徵 MSE 降低不必然讓最終光流 EPE 降低，因此兩項都需要記錄。
+損失使用原生實作的有效像素與 component reduction；無效 GT 在運算前排除，
+非有限預測視為執行錯誤，而非悄悄從評分支援移除。
+EPE 另行在完整 GT-valid 分母評分。MoL loss 降低不保證每筆或平均 EPE 單調下降。
 
-## 目前驗證範圍
+固定 KITTI 設定為 160 TRAIN、32 epochs、batch 1、seed 20261028，
+每個 epoch 使用獨立 seed 的 shuffle。AdamW peak LR 3e-4、betas (0.9,0.999)、
+epsilon 1e-8、weight decay 0；warmup 160 updates，之後 cosine 到 peak LR 的 0.1，
+以 FP64 計算 global norm 並 clip 至 1。無資料增強，dev 不參與 optimizer。
+固定第 32 epoch 為最終模型，不按 dev 最佳分數選 checkpoint。
 
-模型結構、完整網格輸出及初始恆等行為已在本機實作與檢查。
-目前以 160 對 KITTI 訓練資料進行便宜 target 的擬合驗證，
-設定為 10 個完整 epochs，每個 epoch 使用全部 160 對資料。
-這些是訓練設定，尚無完成核驗的本模型光流改善結果。
+## 可以解釋到哪裡
 
-修復模型與完整資料／訓練／推論程式已公開於 [`src/waft_repair`](../src/waft_repair)。
-依 [執行指南](running.md)可先跑 CPU 合成範例，再使用完整資料訓練與影像推論。
-程式碼可執行性已完成 CPU 驗證；repository 未附上已驗證成效的修復模型權重，
-也未建立未見資料的泛化結論。
+模型可輸出 normalized residual、global／spatial 分量、對齊 raw difference、
+matched support 與 forward collision mass。這些資訊可以描述修正行為與對齊支援，
+並用於固定分支介入；它們沒有被校準成錯誤機率，也不直接辨識唯一錯誤根因。
 
-接著閱讀：[Target 製作](targets.md) · [結果與驗證範圍](results.md)。
-
+查看熱圖、比較 delta 能量，不能替代完整五步光流的介入評估。
+目前主流程沒有 hard accept gate、錯誤類別專家或依 GT 決定的推論策略。

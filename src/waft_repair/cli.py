@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 def parser() -> argparse.ArgumentParser:
-    command = argparse.ArgumentParser(description="Prepare targets, train feature repair, and predict flow with frozen WAFT.")
+    command = argparse.ArgumentParser(description="Train motion-aligned repair through frozen native WAFT and predict flow; legacy target tools are also available.")
     command.add_argument("--threads", type=int, default=2, help="CPU worker threads (default: 2)")
     sub = command.add_subparsers(dest="command", required=True)
     demo = sub.add_parser("demo", help="Run a small synthetic CPU training and feature prediction example")
@@ -65,6 +65,8 @@ def parser() -> argparse.ArgumentParser:
     images.add_argument("--waft-checkpoint", required=True)
     images.add_argument("--device", default="cpu")
     images.add_argument("--backend", choices=("reference", "native"), default="reference")
+    from .native_cli import register
+    register(sub)
     return command
 
 
@@ -85,6 +87,9 @@ def main(argv=None) -> None:
 
 
 def dispatch(args):
+    if args.command.startswith("native-"):
+        from .native_cli import dispatch_native
+        return dispatch_native(args)
     if args.command == "doctor":
         import torch
         versions = {}
@@ -94,7 +99,9 @@ def dispatch(args):
             except importlib.metadata.PackageNotFoundError:
                 versions[package] = None
         result = {"packages": versions, "cuda_initialized": torch.cuda.is_initialized(),
-                  "reference_backend": "small CPU grids", "native_backend": "CUDA and compiled Mamba/causal-conv1d required"}
+                  "reference_backend": "legacy synthetic small CPU grids",
+                  "legacy_slim_backend": "CUDA and compiled Mamba/causal-conv1d required",
+                  "current_motion_backend": "PyTorch convolutions; official WAFT CPU or CUDA; no Mamba required"}
         if bool(args.waft_source) != bool(args.waft_checkpoint):
             raise ValueError("Pass --waft-source and --waft-checkpoint together")
         if args.waft_source:

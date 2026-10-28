@@ -92,3 +92,13 @@ tmp_trash
 /dist/
 *.egg-info/
 
+# Current native training guide and preserved historical workflow documentation.
+!/docs/native-training.md
+!/docs/legacy-architecture.md
+!/docs/legacy-feature-repair.md
+!/docs/legacy-results.md
+!/docs/legacy-running.md
+!/docs/legacy-usage.md
+!/docs/results/native-epoch16-cases.csv
+!/docs/results/native-epoch16-evidence.json
+

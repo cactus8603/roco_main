@@ -66,6 +66,8 @@ def atomic_json(path,value):
 
 def atomic_torch(path,value):
     _atomic(path,lambda stream:torch.save(cpu_tree(value),stream))
+    from ..memory_hygiene import advise_readonly
+    advise_readonly(path)
 
 
 def atomic_text(path,value):
@@ -88,3 +90,4 @@ def output_lock(directory):
         except BlockingIOError as error:raise ValueError('Another trainer owns this output directory') from error
         try:yield
         finally:fcntl.flock(stream,fcntl.LOCK_UN)
+

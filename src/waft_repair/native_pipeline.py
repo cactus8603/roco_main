@@ -18,6 +18,7 @@ import numpy as np
 import torch
 
 from .backend import load_backend,load_rgb_pair,STATE_SHA256,SOURCE_COMMIT
+from .memory_hygiene import case_boundary, advise_readonly
 from .motion.io import (atomic_json,atomic_torch,atomic_text,check_descriptor,cpu_tree,descriptor,
                         load_tensor,output_lock,require,sha256)
 from .motion.model import MotionFeatureRepair,MotionRepairConfig
@@ -35,8 +36,10 @@ def _system(source,checkpoint,device,*,repair=None,checkpoint_refinement=True,me
     backend=load_backend(source,checkpoint,device=device)
     model=MotionFeatureRepair() if repair is None else repair
     system=MotionNativeRepairSystem(backend.core,model.to(device),checkpoint_refinement=checkpoint_refinement,
+        expected_core_digest=backend.metadata['state_sha256'],
         padder_factory=backend.padder_factory,coords_grid_fn=backend.coords_grid,
         bilinear_sampler_fn=backend.bilinear_sampler)
+    case_boundary(torch,paths=[checkpoint])
     return system,backend.metadata
 
 
@@ -48,21 +51,21 @@ def _room(output,reserve_gib):
 def _package_sources():
     # Relative module identities keep CPU continuation portable across installs.
     from .motion import model,native,loss,consumer,training,data,geometry,finite,io
-    from . import backend,targets,ground_truth,data as legacy_data,native_cli
+    from . import backend,targets,ground_truth,data as legacy_data,native_cli,memory_hygiene
     from .motion import checkpoint
     modules=[model,native,loss,consumer,training,data,geometry,finite,io,backend,targets,
-             ground_truth,legacy_data,native_cli,checkpoint]
+             ground_truth,legacy_data,native_cli,checkpoint,memory_hygiene]
     result={m.__name__:sha256(m.__file__) for m in modules}
     result[__name__]=sha256(__file__)
     return result
 
 
-def _reconcile_history(output,completed_updates):
+def _reconcile_history(output,completed_updates,history_name='history.jsonl'):
     """Preserve uncommitted post-checkpoint lines and resume the committed prefix."""
     latest=load_tensor(output/'checkpoint.pt')
     require(latest.get('completed_updates')==completed_updates,
         'Resume the latest committed checkpoint.pt; rewinding an existing run is not supported')
-    history=output/'history.jsonl'
+    history=output/history_name
     if not history.exists():
         require(completed_updates==0,'Committed training history is missing')
         return
@@ -72,7 +75,7 @@ def _reconcile_history(output,completed_updates):
         value=json.loads(line)
         require(value['completed_updates']==index,'Committed history update order differs')
     if len(lines)>completed_updates:
-        backup=output/f'history-uncommitted-{time.time_ns()}.jsonl'
+        backup=output/f'{history.stem}-uncommitted-{time.time_ns()}.jsonl'
         atomic_text(backup,''.join(lines[completed_updates:]))
         atomic_text(history,''.join(lines[:completed_updates]))
 
@@ -103,8 +106,8 @@ def prepare(spec,output,waft_source,waft_checkpoint,*,device='cpu',reserve_gib=2
         if 'group' in sample:row['group']=sample['group']
         rows.append(row)
         atomic_json(output/'progress.json',dict(status='PREPARING',completed_pairs=len(rows),total_pairs=len(samples)))
-        del pair,prepared,packet,baseline,gt,valid;gc.collect()
-        if torch.device(device).type=='cuda':torch.cuda.empty_cache()
+        del pair,prepared,packet,baseline,gt,valid
+        case_boundary(torch,paths=[sample[k]['path'] for k in ('image1','image2','ground_truth')])
     system.verify_core_binding()
     manifest=dict(schema=MANIFEST_SCHEMA,model_abi='paired-feature-repair/motion-aligned-v1',
         waft=metadata,samples=rows,supervision='Separate original native GT; no teacher features',
@@ -148,9 +151,11 @@ def _evaluate(system,manifest_path,manifest,rows,output,*,save_outputs=True):
                 native_hw=prepared['native_hw'],padding=prepared['padding'],
                 flow=predicted['flow'],info=predicted['info']))
             artifact=descriptor(target,relative_to=output)
+            advise_readonly(target)
         records.append(dict(id=row['id'],split=row['split'],native5_MoL=nll,
                             all5=all5,baseline_all5=baseline5,artifact=artifact))
-        del features,predicted,baseline,prepared,gt,valid;gc.collect()
+        del features,predicted,baseline,prepared,gt,valid
+        case_boundary(torch,paths=[manifest_path.parent/row[k]['path'] for k in ('input','labels','baseline')])
     summaries={}
     for split in sorted({r['split'] for r in records}):
         selected=[r for r in records if r['split']==split];count=sum(r['all5'][-1]['valid_pixels'] for r in selected)
@@ -193,7 +198,7 @@ def train(manifest,output,waft_source,waft_checkpoint,*,epochs=32,seed=20261028,
         binding=dict(fixed_cases=[r['id'] for r in rows],epochs=epochs,shuffle_seed=seed,
                      manifest_sha256=sha256(path),schema='native-epoch-data/v1')
         source_binding=_package_sources()
-        core_binding=dict(state_digest=STATE_SHA256,source_commit=SOURCE_COMMIT,torch_version=str(torch.__version__))
+        core_binding=dict(state_digest=metadata['state_sha256'],source_commit=SOURCE_COMMIT,torch_version=str(torch.__version__))
         trainer=NativeTrainer(system.restorer,system,config,model_config=asdict(system.restorer.config),
             binding=binding,core_binding=core_binding,
             observation_binding=dict(model_abi=manifest['model_abi'],four_original_taps=True),source_binding=source_binding)
@@ -212,7 +217,8 @@ def train(manifest,output,waft_source,waft_checkpoint,*,epochs=32,seed=20261028,
             state=trainer.state_dict(cursor=cursor);trainer.validate_checkpoint(state)
             atomic_torch(output/'checkpoint.pt',state)
             portable=export_model_checkpoint(system.restorer,trainer.completed_updates,
-                metadata=dict(training_method='native5-MoL-gamma0.85',manifest_sha256=binding['manifest_sha256']))
+                metadata=dict(training_method='native5-MoL-gamma0.85',manifest_sha256=binding['manifest_sha256']),
+                waft_checkpoint_sha256=metadata['waft_checkpoint_sha256'])
             atomic_torch(output/'model.pt',portable)
             if label.startswith('E'):atomic_torch(output/'checkpoints'/(label+'.pt'),state)
             atomic_json(output/'progress.json',dict(status='COMPLETE' if trainer.completed_updates==budget else 'TRAINING',
@@ -233,7 +239,9 @@ def train(manifest,output,waft_source,waft_checkpoint,*,epochs=32,seed=20261028,
                 with context:metrics=trainer.step(prepared,gt,valid)
                 metrics.update(id=row['id'],epoch=epoch+1,offset_in_epoch=offset)
                 log.write(json.dumps(metrics,allow_nan=False)+'\n');log.flush()
-                del prepared,gt,valid;gc.collect()
+                del prepared,gt,valid
+                case_boundary(torch,paths=[path.parent/row[k]['path'] for k in ('input','labels')],
+                              log_path=output/'memory-boundaries.jsonl',completed_updates=trainer.completed_updates)
                 n=trainer.completed_updates
                 if n%len(rows)==0 and (n//len(rows) in (1,4,8,16,32) or n==budget):
                     label=f'E{n//len(rows):03d}'
@@ -258,6 +266,8 @@ def evaluate(manifest,repair_checkpoint,output,waft_source,waft_checkpoint,*,spl
     model,receipt=load_model_checkpoint(repair_checkpoint,device=device,expected_sha256=expected_sha256)
     system,metadata=_system(waft_source,waft_checkpoint,device,repair=model)
     require(metadata==manifest['waft'],'Evaluation inputs bind a different WAFT')
+    require(metadata['waft_checkpoint_sha256']==receipt['waft_checkpoint_sha256'],
+            'Repair checkpoint and evaluation WAFT profiles differ')
     output=Path(output).resolve();output.mkdir(parents=True,exist_ok=False)
     result=_evaluate(system,path,manifest,rows,output)
     system.verify_core_binding()
@@ -269,7 +279,9 @@ def infer(repair_checkpoint,image1,image2,output,waft_source,waft_checkpoint,*,d
     from .motion.checkpoint import load_model_checkpoint
     output=Path(output).resolve();require(not output.exists(),'Prediction output already exists')
     model,receipt=load_model_checkpoint(repair_checkpoint,device=device,expected_sha256=expected_sha256)
-    system,_=_system(waft_source,waft_checkpoint,device,repair=model)
+    system,metadata=_system(waft_source,waft_checkpoint,device,repair=model)
+    require(metadata['waft_checkpoint_sha256']==receipt['waft_checkpoint_sha256'],
+            'Repair checkpoint and inference WAFT profiles differ')
     system.eval();pair=load_rgb_pair(image1,image2).to(device)
     with torch.no_grad():predicted=system.predict(pair[:,0],pair[:,1])
     flow_steps=np.stack([flow[0].permute(1,2,0).cpu().numpy() for flow in predicted['flow']])
@@ -279,3 +291,4 @@ def infer(repair_checkpoint,image1,image2,output,waft_source,waft_checkpoint,*,d
     system.verify_core_binding()
     return dict(output=str(output),native_hw=list(flow_steps.shape[1:3]),flow_steps_shape=list(flow_steps.shape),
                 GT_inputs=False,teacher_inputs=False,optimizer_updates=0,checkpoint=receipt)
+

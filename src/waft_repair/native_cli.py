@@ -4,7 +4,7 @@ from __future__ import annotations
 
 def _waft(command):
     command.add_argument('--waft-source',required=True,help='Pinned official WAFT source checkout')
-    command.add_argument('--waft-checkpoint',required=True,help='Complete official source-only zero-shot.pth')
+    command.add_argument('--waft-checkpoint',required=True,help='Complete known official zero-shot.pth, kitti.pth or sintel.pth')
     command.add_argument('--device',default='cpu')
 
 
@@ -13,6 +13,18 @@ def register(sub):
     split.add_argument('--kitti-root',required=True)
     split.add_argument('--output',required=True,help='New directory for images.json and split.json')
     split.add_argument('--split-file',help='Optional explicit published split JSON')
+    sintel=sub.add_parser('native-split-sintel',help='Write the fixed scene-disjoint Sintel Clean+Final RGB/GT specification')
+    sintel.add_argument('--sintel-root',required=True);sintel.add_argument('--output',required=True)
+    ddp=sub.add_parser('native-train-ddp',help='torchrun: two synchronized repair replicas, original RGB rebuilt each visit')
+    ddp.add_argument('--spec',required=True);ddp.add_argument('--output',required=True);_waft(ddp)
+    ddp.set_defaults(device='cuda')
+    ddp.add_argument('--epochs',type=int,default=80);ddp.add_argument('--seed',type=int,default=20261028)
+    ddp.add_argument('--warmup-updates',type=int,default=796)
+    ddp.add_argument('--resume',help='This run full checkpoint.pt, including both rank RNG')
+    ddp.add_argument('--checkpoint-every',type=int,default=256)
+    ddp.add_argument('--stop-after-updates',type=int)
+    ddp.add_argument('--activation-offload',choices=('cpu','none'),default='cpu')
+    ddp.add_argument('--reserve-gib',type=float,default=20);ddp.add_argument('--memory-fraction',type=float)
     prep=sub.add_parser('native-prepare',help='Cache original F0/four taps/fifth baseline prior and separate original GT')
     prep.add_argument('--spec',required=True);prep.add_argument('--output',required=True);_waft(prep)
     prep.add_argument('--reserve-gib',type=float,default=20)
@@ -44,6 +56,15 @@ def dispatch_native(args):
     if args.command=='native-split-kitti':
         from .motion.data import make_kitti_spec
         return make_kitti_spec(args.kitti_root,args.output,args.split_file)
+    if args.command=='native-split-sintel':
+        from .motion.sintel import make_sintel_spec
+        return make_sintel_spec(args.sintel_root,args.output)
+    if args.command=='native-train-ddp':
+        from .distributed_pipeline import train
+        return train(args.spec,args.output,args.waft_source,args.waft_checkpoint,device=args.device,
+            epochs=args.epochs,seed=args.seed,warmup_updates=args.warmup_updates,resume=args.resume,
+            checkpoint_every=args.checkpoint_every,stop_after_updates=args.stop_after_updates,
+            activation_offload=args.activation_offload,reserve_gib=args.reserve_gib,memory_fraction=args.memory_fraction)
     if args.command=='native-import-checkpoint':
         from .motion.checkpoint import import_checkpoint
         return import_checkpoint(args.checkpoint,args.output,expected_sha256=args.expected_sha256)
@@ -63,3 +84,4 @@ def dispatch_native(args):
         return pipeline.infer(args.repair_checkpoint,args.image1,args.image2,args.output,**core,
                               expected_sha256=args.expected_sha256)
     raise ValueError('Unknown native command')
+

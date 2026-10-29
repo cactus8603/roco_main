@@ -138,7 +138,8 @@ class NativePilotTrainer:
         require(isinstance(self.binding,dict) and {'fixed_cases','epochs','shuffle_seed'} <= self.binding.keys(),
             'Fixed population, epoch count, and shuffle seed binding required')
         require(type(self.binding['epochs']) is int and self.binding['epochs'] > 0
-            and len(self.binding['fixed_cases'])*self.binding['epochs']==config.updates,
+            and self.binding.get('world_size',1) in (1,2)
+            and len(self.binding['fixed_cases'])*self.binding['epochs']==config.updates*self.binding.get('world_size',1),
             'Training budget must equal complete fixed epochs')
         epoch_order(self.binding['fixed_cases'],self.binding['shuffle_seed'],1)
         require(all(p.requires_grad for p in self.parameters),'Only trainable repair optimizer parameters')
@@ -279,3 +280,4 @@ def cpu_tree(value):
     if isinstance(value,tuple):
         return tuple(cpu_tree(item) for item in value)
     return copy.deepcopy(value)
+

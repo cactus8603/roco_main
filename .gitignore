@@ -102,3 +102,7 @@ tmp_trash
 !/docs/results/native-epoch16-cases.csv
 !/docs/results/native-epoch16-evidence.json
 
+# Local publication checks and receipts are not source artifacts.
+/local/
+/checkpoints/
+

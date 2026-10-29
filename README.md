@@ -1,34 +1,25 @@
 # 凍結 WAFT 的光流特徵修復
 
-**保持完整 WAFT 凍結，以原生五步光流損失訓練外接的特徵修復模型。**
-
-目前主流程使用 **3,000,576 個參數**的 motion-aligned 修復器。它讀取 WAFT 原始雙幀特徵、
-同次 encoder 的四層特徵，以及原始 WAFT 第五步的 flow／info；預測特徵修正量後，
-重新執行同一個凍結 WAFT 的完整五步光流估計。訓練梯度經過 WAFT 回到修復器，
-只有修復器參數會更新。
+以原生五步 MoL loss 訓練 **3,000,576 參數**的 motion-aligned 修復器，完整 WAFT 保持凍結。
+提供 KITTI 單卡及 Sintel Clean＋Final 雙卡訓練、完整 checkpoint 接續與兩張 RGB 推論。
+GT 僅進入訓練損失與評估；修復器讀取原始 F0、sigma、同次 encoder 四層特徵及原始第五步 motion prior。
 
 ```mermaid
 flowchart TD
-    rgb[兩張 RGB] --> prefix[凍結 WAFT encoder 與融合]
-    prefix --> features[完整雙幀 F0、固定 sigma、四層特徵]
-    features --> baseline[凍結 WAFT 原始五步]
-    baseline --> prior[第五步 flow／info<br/>跨幀對齊與支援範圍]
-    features --> repair[可訓練修復器 3.00M]
-    prior --> repair
-    repair --> repaired[Fhat = F0 + sigma × delta]
-    repaired --> consumer[凍結 WAFT<br/>重建 hidden、零光流、完整五步]
-    consumer --> flow[修復後光流]
-    consumer --> loss[訓練：原生五步 MoL loss]
-    gt[TRAIN GT] --> loss
-    loss -. 只更新修復器 .-> repair
+    RGB[兩張 RGB] --> WAFT[凍結 WAFT encoder 與原始五步]
+    WAFT --> Inputs[F0、sigma、四層特徵、motion prior]
+    Inputs --> R[可訓練修復器 3.00M]
+    R --> Fhat[Fhat = F0 + sigma × delta]
+    Fhat --> Consumer[凍結 WAFT 完整五步]
+    Consumer --> Flow[原尺寸光流]
+    Consumer --> Loss[TRAIN 原生五步 MoL]
+    GT[TRAIN GT] --> Loss
+    Loss -. 只更新修復器 .-> R
 ```
-
-GT 只用於訓練損失與評估。推論需要兩張 RGB、官方 WAFT 權重與修復器權重，
-不讀取 GT、target features 或配對 Clean。此流程沒有 DINOv3，也不需要先製作昂貴特徵教師。
 
 ## 安裝
 
-以下為已核對的 Python 3.10／PyTorch 2.5.1 環境：
+已核對 Python3.10／PyTorch2.5.1。記憶體釋放流程使用 Linux／glibc。
 
 ```bash
 git clone https://github.com/cactus8603/roco_main.git
@@ -39,93 +30,68 @@ python -m pip install --upgrade pip setuptools wheel
 python -m pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu124
 python -m pip install -e ".[dev,waft]"
 python -m pip install -r requirements/native-flow.txt
-```
-
-目前修復器是 convolutional 模型，不需要 Mamba／causal-conv1d extension。
-小尺寸 CPU 驗證可改裝對應 CPU PyTorch；完整影像訓練建議使用 CUDA。
-
-準備固定的官方原碼：
-
-```bash
 git clone https://github.com/princeton-vl/WAFT.git external/WAFT
 git -C external/WAFT checkout b152ff1cad1af8c185ee7b141997c48ff3334c87
 ```
 
-從 [WAFT 官方下載資料夾](https://drive.google.com/drive/folders/1joBWKGoH2RUdCgcge8Tz2osOHcQUX5m_?usp=sharing)
-取得 **a2／DAv2／vits、Chairs+Things source-only `zero-shot.pth`**，
-存為 `checkpoints/waft/zero-shot.pth`，再核對：
+從 [WAFT 官方資料夾](https://drive.google.com/drive/folders/1joBWKGoH2RUdCgcge8Tz2osOHcQUX5m_?usp=sharing)
+取得 a2／DAv2／vits 的 `kitti.pth`、`sintel.pth` 或 source-only `zero-shot.pth`。
+loader 同時核對完整檔案 SHA256 與全部508個 tensors；資料、權重及實驗產物由使用者另行準備。
+不需額外 DINOv3 或 Mamba extension，也不會另下載 encoder 權重。
+
+## KITTI：50 epochs，單卡
 
 ```bash
-waft-repair doctor --waft-source external/WAFT \
-  --waft-checkpoint checkpoints/waft/zero-shot.pth
+waft-repair native-split-kitti --kitti-root data/kitti --output outputs/kitti-spec
+MALLOC_ARENA_MAX=2 waft-repair native-prepare \
+  --spec outputs/kitti-spec/images.json --output outputs/kitti-inputs --device cuda:0 \
+  --waft-source external/WAFT --waft-checkpoint checkpoints/waft/kitti.pth
+MALLOC_ARENA_MAX=2 waft-repair native-train \
+  --manifest outputs/kitti-inputs/manifest.json --output outputs/kitti-repair \
+  --epochs 50 --warmup-updates 160 --device cuda:0 \
+  --waft-source external/WAFT --waft-checkpoint checkpoints/waft/kitti.pth
 ```
 
-程式核對固定原碼、checkpoint SHA-256 與完整 508 個 WAFT tensors，不另行下載 encoder 權重。
-資料集、官方權重與訓練後修復器權重不包含在 repository。
+固定160 TRAIN／40已曝光dev，batch1，共8000次更新，最終固定E050。
+輸入 cache 綁定所選官方底模；換底模時使用新的輸入目錄。
 
-## KITTI：資料、訓練、續訓、推論
-
-先將 KITTI 2015 解壓到 `data/kitti/training`，包含 `image_2` 與 `flow_occ`。
-以下命令使用公開的固定 [160 TRAIN／40 dev ID](examples/native/kitti-split.json)：
+## Sintel：80 epochs，雙卡
 
 ```bash
-waft-repair native-split-kitti --kitti-root data/kitti \
-  --output outputs/kitti-spec
-
-waft-repair native-prepare --spec outputs/kitti-spec/images.json \
-  --output outputs/kitti-inputs --device cuda:0 \
-  --waft-source external/WAFT --waft-checkpoint checkpoints/waft/zero-shot.pth
-
-waft-repair native-train --manifest outputs/kitti-inputs/manifest.json \
-  --output outputs/native-repair --epochs 32 --device cuda:0 \
-  --waft-source external/WAFT --waft-checkpoint checkpoints/waft/zero-shot.pth
+waft-repair native-split-sintel --sintel-root data/sintel --output outputs/sintel-spec
+CUDA_VISIBLE_DEVICES=0,1 MALLOC_ARENA_MAX=2 OMP_NUM_THREADS=2 \
+  torchrun --standalone --nnodes=1 --nproc-per-node=2 --module waft_repair \
+  --threads 2 native-train-ddp --spec outputs/sintel-spec/images.json \
+  --output outputs/sintel-repair --epochs 80 --warmup-updates 796 \
+  --waft-source external/WAFT --waft-checkpoint checkpoints/waft/sintel.pth
 ```
 
-`native-prepare` 快取原始輸入、encoder observations 與 baseline 對齊依據，不訓練修復器。
-`native-train` 每次由修復特徵重建 hidden，完整執行五步，使用原生 MoL loss。
-160 筆、32 epochs、batch 1 共 5,120 次修復器更新；dev 不參與更新，最終使用固定第 32 epoch。
+18 TRAIN／5 dev場景，兩種 rendering 使用相同場景分割；TRAIN1592、dev490。
+每卡1筆、global batch2、共63680次同步更新。每次從 RGB 重建原始特徵、baseline與prior，
+DDP 將兩個局部 loss 的梯度平均一次，再做 FP64 clipping 和 AdamW；不讀取教師特徵。
 
-若中斷，沿用原本清單、設定與輸出目錄：
+## 記憶體、接續與驗證
+
+每筆完成並刪除暫存 tensor 後，同步 CUDA、清除閒置 pinned-host cache、執行 `malloc_trim`，
+再對已使用的自有檔案給予唯讀 `POSIX_FADV_DONTNEED` 建議。輸入內容與有效模型狀態保持原值。
+記憶體紀錄寫入 `memory-boundaries.jsonl` 或 `memory-rank0/1.jsonl`；既有服務與系統資源設定由執行環境管理。
+
+中斷後沿用原命令與設定，加上 `--resume outputs/.../checkpoint.pt`。
+雙卡 checkpoint 保存完整修復器、AdamW、scheduler、資料游標與兩個 rank 各自的完整 RNG；
+僅恢復已提交的更新。程式驗證兩份 repair／AdamW replica 完全相同後才保存。
+固定 checkpoint 評估不以 dev-best 選點；不自動延長排程或重啟工作。
 
 ```bash
-waft-repair native-train --manifest outputs/kitti-inputs/manifest.json \
-  --output outputs/native-repair --epochs 32 --device cuda:0 \
-  --resume outputs/native-repair/checkpoint.pt \
-  --waft-source external/WAFT --waft-checkpoint checkpoints/waft/zero-shot.pth
+python -m pytest tests/waft_repair -q
 ```
 
-對兩張新影像推論：
+測試涵蓋數值損失、凍結／梯度界線、唯讀記憶體處理、兩個真實 CPU Gloo 程序的梯度平均、
+完整 AdamW／每rank RNG恢復，以及雙卡入口的短程停止與接續。CPU fixtures 不代表完整影像 CUDA 速度或 EPE。
 
-```bash
-waft-repair native-infer --repair-checkpoint outputs/native-repair/model.pt \
-  --image1 data/first.png --image2 data/second.png \
-  --output outputs/prediction.npz --device cuda:0 \
-  --waft-source external/WAFT --waft-checkpoint checkpoints/waft/zero-shot.pth
-```
+[完整操作指南](docs/native-training.md)列出權重雜湊、雙卡接續、評估人口與資源設定範圍。
+[架構](docs/architecture.md)、[修復模型](docs/feature-repair.md)、[命令格式](docs/usage.md)與
+[結果及限制](docs/results.md)保留方法與證據定義。
 
-NPZ 保存原尺寸最終 flow 及五步 flow／info。完整評估、資料格式、續訓規則與小尺寸驗證見
-[原生光流訓練完整指南](docs/native-training.md)。命令以前景方式執行，不建立背景訓練服務。
-
-## 模型與證據範圍
-
-模型輸出為 `F0 + sigma × (global + centered_spatial)`，修正量無硬式幅度界限。
-它能拆解全域與空間修正，但 delta 大小、對齊差異與原生 info 並非經校準的錯誤機率，
-也不能單憑熱圖判定錯誤原因。
-
-目前公開的是正在使用的模型與可獨立執行的 pipeline。固定 KITTI 160／40 的第 16 epoch
-評估中，逐影像平均 EPE 為 TRAIN `2.9495 → 1.2575`、dev `4.6323 → 3.5196`。
-這是中途 checkpoint 的監測結果，不是固定第 32 epoch 的最終結論。
-dev 已被歷史研究使用，不是官方隱藏 KITTI test，也不代表全專案從未曝光資料。
-詳細範圍與限制見 [結果文件](docs/results.md)。
-
-## 文件
-
-- [完整執行指南](docs/native-training.md)：安裝、固定 split、快取、訓練、續訓、評估與影像推論。
-- [整體架構](docs/architecture.md)：特徵介面、座標對齊、凍結與梯度。
-- [修復模型](docs/feature-repair.md)：四層特徵、motion prior、global／spatial delta 與 loss。
-- [命令與資料格式](docs/usage.md)：目前 API、manifest 與 checkpoint。
-- [結果與限制](docs/results.md)：中途模型觀察、歷史結果及成本定義。
-- [歷史 target-feature MSE 流程](docs/legacy-running.md)：較早的 3.92M 模型及離線 target 訓練。
-- [歷史 target 製作](docs/targets.md)、[資料清單](docs/data-inventory.md)：既有教師資料與本機存放盤點。
-
-目前主流程不使用歷史 target-feature MSE 訓練；兩者的模型權重與 checkpoint 格式不能互換。
+先前 source-only KITTI第16epoch的已曝光dev監測結果，與目前官方底模的50／80epoch訓練分開記錄。
+目前正式長程訓練仍在進行；尚無這兩條長程訓練的最終EPE結論。
+[歷史 target-feature MSE 流程](docs/legacy-running.md)另有模型與checkpoint格式。

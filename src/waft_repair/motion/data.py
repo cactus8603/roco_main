@@ -37,6 +37,8 @@ def read_spec(path):
         item=dict(row);ids.add(row['id'])
         for key in ('image1','image2','ground_truth'):
             file=(path.parent/row[key]).resolve(strict=True);item[key]=descriptor(file)
+            from ..memory_hygiene import advise_readonly
+            advise_readonly(file)
         for key in ('image1','image2'):
             digest=item[key]['sha256'];previous=split_images.setdefault(digest,row['split'])
             require(previous==row['split'],'Identical RGB bytes occur in both train and dev')
@@ -121,9 +123,11 @@ def load_manifest(path):
     require(value.get('schema')==MANIFEST_SCHEMA and isinstance(value.get('samples'),list)
             and bool(value['samples']),'A nonempty native manifest is required')
     require(value.get('model_abi')=='paired-feature-repair/motion-aligned-v1','Manifest selects a different model')
-    require(value.get('waft',{}).get('state_sha256')==
-            '994e1164487d20779ec14a72d828a8d20433d00ac553ecaeb5d09aab554227ee',
-            'Manifest must bind the original complete source-only WAFT')
+    from ..backend import CHECKPOINT_PROFILES
+    core=value.get('waft',{})
+    profile=CHECKPOINT_PROFILES.get(core.get('waft_checkpoint_sha256'))
+    require(profile is not None and core.get('state_sha256')==profile['state_sha256'],
+            'Manifest must bind a complete declared official WAFT checkpoint')
     ids=[row['id'] for row in value['samples']]
     require(len(set(ids))==len(ids) and all(row['split'] in ('train','dev') for row in value['samples']),
             'Unique IDs and explicit train/dev split required')
@@ -172,3 +176,4 @@ def make_kitti_spec(kitti_root,output,split_file=None):
     atomic_json(output/'split.json',split)
     return dict(spec=str(output/'images.json'),train_pairs=160,dev_pairs=40,
         scope='Canonical historically exposed dev40; not official KITTI hidden test')
+

@@ -14,7 +14,7 @@ from pathlib import Path
 
 import torch
 
-from ..backend import SOURCE_COMMIT
+from ..backend import SOURCE_COMMIT,CHECKPOINT_PROFILES
 from ..targets import CHECKPOINT_SHA256
 from .io import atomic_torch, cpu_tree, load_tensor, require, sha256
 from .model import MotionFeatureRepair, MotionRepairConfig
@@ -84,17 +84,19 @@ def _weights(state, model):
                 and bool(torch.isfinite(value).all()), 'Invalid saved repair tensor: ' + name)
 
 
-def export_model_checkpoint(model, completed_updates, metadata=None):
+def export_model_checkpoint(model, completed_updates, metadata=None, *, waft_checkpoint_sha256=CHECKPOINT_SHA256):
     """Create CPU-owned inference weights; this contains no optimizer or RNG."""
     require(isinstance(model, MotionFeatureRepair), 'MotionFeatureRepair model required')
     require(type(completed_updates) is int and completed_updates >= 0, 'Nonnegative completed update count required')
     config = _config(asdict(model.config))
+    require(waft_checkpoint_sha256 in CHECKPOINT_PROFILES,'Known official WAFT checkpoint profile required')
+    profile=CHECKPOINT_PROFILES[waft_checkpoint_sha256]
     state = cpu_tree(model.state_dict())
     _weights(state, MotionFeatureRepair(config))
     return dict(schema=SCHEMA, model_config=asdict(config), repair=state,
                 repair_state_digest=repair_state_digest(state),
-                core_state_digest=NativeRepairSystem.SOURCE_ONLY_STATE,
-                waft_checkpoint_sha256=CHECKPOINT_SHA256, waft_source_commit=SOURCE_COMMIT,
+                core_state_digest=profile['state_sha256'],
+                waft_checkpoint_sha256=waft_checkpoint_sha256, waft_source_commit=SOURCE_COMMIT,
                 completed_updates=completed_updates, metadata=_metadata(metadata))
 
 
@@ -112,8 +114,9 @@ def _native_metadata(state):
     n = state['completed_updates']
     require(type(n) is int and 0 <= n <= config.updates, 'Bounded native training update count required')
     core = state['verified_core_binding']
-    require(isinstance(core, dict) and core.get('state_digest') == NativeRepairSystem.SOURCE_ONLY_STATE,
-            'Original complete frozen source-only WAFT state is required')
+    require(isinstance(core, dict) and core.get('state_digest') in
+            {profile['state_sha256'] for profile in CHECKPOINT_PROFILES.values()},
+            'A complete declared official frozen WAFT state is required')
     binding = state['binding']; cursor = state['cursor']
     require(isinstance(binding, dict) and {'fixed_cases', 'epochs', 'shuffle_seed'} <= binding.keys()
             and type(binding['epochs']) is int and binding['epochs'] > 0
@@ -148,14 +151,17 @@ def load_model_checkpoint(path, device='cpu', expected_sha256=None):
     schema = state.get('schema')
     if schema == SCHEMA:
         require(set(state) == KEYS, 'Complete portable native repair checkpoint required')
-        require(state['core_state_digest'] == NativeRepairSystem.SOURCE_ONLY_STATE
-                and state['waft_checkpoint_sha256'] == CHECKPOINT_SHA256
+        profile=CHECKPOINT_PROFILES.get(state['waft_checkpoint_sha256'])
+        require(profile is not None and state['core_state_digest'] == profile['state_sha256']
                 and state['waft_source_commit'] == SOURCE_COMMIT, 'Pinned frozen WAFT identity differs')
+        checkpoint_sha=state['waft_checkpoint_sha256'];core_digest=state['core_state_digest']
         n = state['completed_updates']
         require(type(n) is int and n >= 0, 'Nonnegative completed update count required')
         metadata = _metadata(state['metadata'])
     elif schema == TRAINING_SCHEMA:
         n = _native_metadata(state)
+        core_digest=state['verified_core_binding']['state_digest']
+        checkpoint_sha=next(key for key,profile in CHECKPOINT_PROFILES.items() if profile['state_sha256']==core_digest)
         metadata = {'source_format': 'original-native-training',
                     'import_method': 'repair-weights-only; optimizer and RNG are not restored'}
     else:
@@ -172,8 +178,8 @@ def load_model_checkpoint(path, device='cpu', expected_sha256=None):
         require(torch.cuda.is_available(), 'CUDA was selected but is unavailable')
     model.to(selected).eval()
     receipt = dict(schema=schema, checkpoint_sha256=source_sha, repair_state_digest=digest,
-                   model_config=asdict(config), core_state_digest=NativeRepairSystem.SOURCE_ONLY_STATE,
-                   waft_checkpoint_sha256=CHECKPOINT_SHA256, waft_source_commit=SOURCE_COMMIT,
+                   model_config=asdict(config), core_state_digest=core_digest,
+                   waft_checkpoint_sha256=checkpoint_sha, waft_source_commit=SOURCE_COMMIT,
                    completed_updates=n, repair_tensor_count=REPAIR_TENSORS,
                    parameter_count=REPAIR_PARAMETERS, device=str(selected),
                    optimizer_loaded=False, rng_restored=False, metadata=metadata)
@@ -193,7 +199,8 @@ def import_checkpoint(checkpoint, output, expected_sha256=None):
     metadata = dict(origin_checkpoint_sha256=receipt['checkpoint_sha256'], origin_schema=receipt['schema'],
                     origin_repair_tensor_count=receipt['repair_tensor_count'],
                     import_method='validated-native-repair-weights-only')
-    packet = export_model_checkpoint(model, receipt['completed_updates'], metadata=metadata)
+    packet = export_model_checkpoint(model, receipt['completed_updates'], metadata=metadata,
+        waft_checkpoint_sha256=receipt['waft_checkpoint_sha256'])
     atomic_torch(destination, packet)
     return dict(schema=SCHEMA, checkpoint_sha256=sha256(destination),
                 repair_state_digest=packet['repair_state_digest'], completed_updates=receipt['completed_updates'],

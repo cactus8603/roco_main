@@ -33,8 +33,8 @@ git -C external/WAFT checkout b152ff1cad1af8c185ee7b141997c48ff3334c87
 ```
 
 從 [官方 checkpoint 資料夾](https://drive.google.com/drive/folders/1joBWKGoH2RUdCgcge8Tz2osOHcQUX5m_?usp=sharing)
-取得 **WAFT a2／DAv2／vits、Chairs+Things source-only `zero-shot.pth`**，
-放在 `checkpoints/waft/zero-shot.pth`。
+取得 **WAFT a2／DAv2／vits** 的 source-only `zero-shot.pth`、官方 `kitti.pth` 或官方 `sintel.pth`，
+放在 `checkpoints/waft/`。下方32epoch範例保留source-only設定；目前官方50／80epoch命令見新增段落。
 
 固定 checkpoint SHA-256：
 
@@ -48,8 +48,14 @@ waft-repair doctor --waft-source external/WAFT \
 ```
 
 `doctor` 以 CPU 核對官方來源與全部 508 個 tensors，不執行光流推論。
-載入過程不另下載 DAv2 權重。不同 WAFT variant、fine-tuned checkpoint 或未核對來源
-不能直接替代此固定設定。
+載入過程不另下載 DAv2 權重。loader也接受下列兩個明確登錄的官方checkpoint；其他variant、任意fine-tuned權重或未核對來源會拒絕載入。
+
+| 檔案 | 檔案SHA256 | 全508 tensor digest |
+|---|---|---|
+| `kitti.pth` | `656bcbeb7c6b8627eae577d5564f2849f32e1d53f85dcac7324fbeddc96bc9da` | `2c5e8002cb19e0f8d05ee2bfbb1cec6b0507e7690defeebc2b938c7670bf377b` |
+| `sintel.pth` | `aad14eea3d68a70a4009332d941a863a1e5f513af252f6d9136725e654808322` | `040e5864cde10395466f9102b3ea72f629263cb1ce1068d6afcc2400ba2b97c6` |
+
+官方domain權重已有該資料域的訓練曝光；不能把本專案dev評估稱為底模從未見過的資料。
 
 ## 3. 建立影像清單
 
@@ -207,6 +213,76 @@ CPU thread 設定也會綁定；以相同環境與 thread 數續訓。`--threads
 不支援直接以較舊 checkpoint 回退並覆寫既有 run。
 若異常中斷留下超過 checkpoint 的日誌尾端，程式會另存 `history-uncommitted-*.jsonl`，
 再從已保存的更新位置接續，避免將未提交紀錄重複算成已完成更新。
+
+## 官方 KITTI50／Sintel80 與記憶體處理
+
+README 提供官方 KITTI50epoch及 Sintel80epoch的完整命令。KITTI的其他設定沿用上方單卡流程，
+只在新run開始時固定 `--epochs 50` 和 `kitti.pth`，共8000updates；換checkpoint後須重新 `native-prepare`。
+已存在的run不會因修改命令列而自動改排程；source、底模或資料綁定不同會拒絕 exact resume。
+
+### Sintel雙卡RGB入口
+
+`native-split-sintel`使用18個TRAIN場景與5個dev場景。
+dev固定為 `bandage_1`、`bandage_2`、`mountain_1`、`shaman_2`、`shaman_3`；
+Clean和Final採用相同場景分割，共1592TRAIN／490dev，不按結果選樣本。
+Sintel原始有效支援為兩個flow分量皆有限且絕對值小於1000。
+
+```bash
+waft-repair native-split-sintel --sintel-root data/sintel --output outputs/sintel-spec
+CUDA_VISIBLE_DEVICES=0,1 MALLOC_ARENA_MAX=2 OMP_NUM_THREADS=2 \
+  torchrun --standalone --nnodes=1 --nproc-per-node=2 --module waft_repair \
+  --threads 2 native-train-ddp --spec outputs/sintel-spec/images.json \
+  --output outputs/sintel-repair --epochs 80 --warmup-updates 796 \
+  --waft-source external/WAFT --waft-checkpoint checkpoints/waft/sintel.pth
+```
+
+兩個rank各1筆，global batch2；80×796＝63680同步updates。
+AdamW、native5 MoL gamma.85、peak3e-4、epsilon1e-8、weight decay0與FP64 norm1 clipping保持相同；
+warmup796後cosine至peak的0.1。DDP只包覆修復器，以兩個完整case的局部平均loss做一次梯度平均。
+不另除以world-size；rank0計算FP64 norm並廣播相同clipping比例。
+每次visit直接從原始RGB重建F0、sigma、四層taps、baseline及prior，不存feature cache。
+
+初始與固定E032／E080評估完整2082case，E001／E004／E008／E016僅評估490dev；
+共8206case，每筆保存baseline與repair的全部五步指標，init與最終另保留4164份flow檔。
+雙卡逐例標量寫入 `evaluations/<label>/rank0.jsonl` 和 `rank1.jsonl`；
+其中EPE是該case原始有效像素平均。兩rank的TRAIN online loss為兩個case均值的算術平均，
+與按整個資料集有效像素數加權的EPE分開看。dev不參與optimizer更新。
+
+接續同一run時，在原始torchrun命令加上：
+
+```text
+--resume outputs/sintel-repair/checkpoint.pt
+```
+
+`--stop-after-updates 2`可做保留原63680步排程的短程驗證；接續時移除此選項。
+checkpoint預設每256updates及正常停止時完整保存；兩個rank的repair／AdamW digest必須完全相同。
+保存完整161R、161AdamW的step與moments、scheduler、下一對輸入及各rank的Torch／Python／NumPy／CUDA RNG。
+兩份history都會保存未commit尾端後接續，不將尾端logs當成已保存更新。
+本入口使用新的portable run綁定；現有主機operation的checkpoint不會被靜默換綁定或當成新run的exact resume。
+
+### 主機記憶體界線
+
+使用Linux／glibc與PyTorch2.5.1的已核對 pinned-host cache API，並在啟動Python前設定
+`MALLOC_ARENA_MAX=2`。每筆輸出與梯度不再使用後：
+
+1. 刪除上一筆暫存引用，完成垃圾回收並同步CUDA。
+2. 清除僅供重用的閒置pinned-host blocks，再執行`malloc_trim(0)`。
+3. 對已使用的自有普通檔案，透過唯讀、no-follow descriptor給予`POSIX_FADV_DONTNEED`建議。
+
+此流程不修改原始檔案內容、不改有效tensor／loss／optimizer，也不呼叫CUDA `empty_cache`。
+逐筆遙測包括RSS、cgroup current／peak／events；對共享但非本UID的輸入會明確拒絕給予cache advice。
+被讀取的資料應由執行者擁有，或先建立自己的合法資料副本。
+這些釋放動作不保證永不遇到OOM；仍須依主機監控及限制執行。
+
+公開CLI為前景程式，不安裝systemd服務、不變更OOMd設定。
+現有正式主機作業的GPU admission、PSI門檻、每rank14GiB high／16GiB max與Swap0由其凍結wrapper管理。
+公開命令可額外指定 `--memory-fraction 0.19 --reserve-gib 64`；這兩個旗標分別限制PyTorch顯存比例及保留磁碟空間，
+不會建立cgroup RAM限制或GPU合作鎖。共享主機請由既有scheduler提供資源分配。
+
+雙卡trainer的step、完整checkpoint建構／驗證及每rank RNG載入，沿用已核對的原始native trainer計算。
+套件化改用相對import與portable資料／程式雜湊綁定；這不代表主機的systemd／pidfd控制程式也已移植。
+新portable入口以CPU雙程序synthetic consumer驗證梯度平均、完整AdamW／RNG、停止／接續；
+官方完整508權重另外以CPU載入核對。未新增正式CUDA訓練實驗或宣稱新的EPE改善。
 
 ## 6. 固定 checkpoint 評估
 

@@ -79,7 +79,8 @@ def cached_case(directory,packet):
         labels=descriptor(label_path,relative_to=directory),valid_pixels=int(valid.sum()))
     path=directory/'manifest.json'
     atomic_json(path,dict(schema=MANIFEST_SCHEMA,model_abi='paired-feature-repair/motion-aligned-v1',
-        waft={'state_sha256':MotionNativeRepairSystem.SOURCE_ONLY_STATE},samples=[sample]))
+        waft={'state_sha256':MotionNativeRepairSystem.SOURCE_ONLY_STATE,
+              'waft_checkpoint_sha256':'1b49d1fc4513c6fa34a8de8f791dd8735d366d4b25d8dea47626a79056edd402'},samples=[sample]))
     return path,sample,labels
 
 
@@ -238,3 +239,4 @@ def test_make_kitti_spec_uses_resource_exact_IDs_without_loading_images_or_model
     assert [v['id'].split('/')[-1] for v in value['samples'] if v['split']=='dev']==split['dev_ids']
     assert len(read_spec(output/'images.json'))==200
     with pytest.raises(FileExistsError):make_kitti_spec(root.parent,output)
+

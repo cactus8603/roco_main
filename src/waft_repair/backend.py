@@ -27,6 +27,13 @@ from .targets import (CHECKPOINT_SHA256, EXPENSIVE_STEPS, FrozenWAFTBackend, che
 
 SOURCE_COMMIT = "b152ff1cad1af8c185ee7b141997c48ff3334c87"
 STATE_SHA256 = "994e1164487d20779ec14a72d828a8d20433d00ac553ecaeb5d09aab554227ee"
+CHECKPOINT_PROFILES = {
+    CHECKPOINT_SHA256: dict(name='source-only', state_sha256=STATE_SHA256),
+    '656bcbeb7c6b8627eae577d5564f2849f32e1d53f85dcac7324fbeddc96bc9da':
+        dict(name='kitti', state_sha256='2c5e8002cb19e0f8d05ee2bfbb1cec6b0507e7690defeebc2b938c7670bf377b'),
+    'aad14eea3d68a70a4009332d941a863a1e5f513af252f6d9136725e654808322':
+        dict(name='sintel', state_sha256='040e5864cde10395466f9102b3ea72f629263cb1ce1068d6afcc2400ba2b97c6'),
+}
 MODEL_CONFIG = dict(feature_encoder="dav2", iterative_module="vits", algorithm="waft-a2",
                     iters=5, scale=0, use_var=True, var_min=0, var_max=10)
 
@@ -93,8 +100,8 @@ def _official_modules(source: Path):
 
 
 def load_backend(source, checkpoint, device="cpu", *,
-                 expected_checkpoint_sha=CHECKPOINT_SHA256, verify_source=True):
-    """Strictly load the complete source-only checkpoint on CPU, then move it.
+                 expected_checkpoint_sha=None, verify_source=True):
+    """Strictly load a known complete official checkpoint on CPU, then move it.
 
     The caller supplies an official WAFT checkout and its complete checkpoint.
     No separate DAv2/ViT weights are downloaded or read. Source checking may be
@@ -103,13 +110,19 @@ def load_backend(source, checkpoint, device="cpu", *,
     source, checkpoint = Path(source).resolve(strict=True), Path(checkpoint).resolve(strict=True)
     device = torch.device(device)
     data.require(device.type in ("cpu", "cuda"), "WAFT supports explicit CPU or CUDA execution")
+    actual_sha = data.sha256(checkpoint)
+    if expected_checkpoint_sha is None:
+        data.require(actual_sha in CHECKPOINT_PROFILES, 'WAFT checkpoint SHA256 differs from all known official checkpoints')
+        expected_checkpoint_sha = actual_sha
     data.require(data.valid_sha(expected_checkpoint_sha), "Expected checkpoint SHA256 is required")
-    data.require(data.sha256(checkpoint) == expected_checkpoint_sha, "WAFT checkpoint SHA256 differs")
+    data.require(actual_sha == expected_checkpoint_sha, "WAFT checkpoint SHA256 differs")
     if verify_source:
         head = subprocess.check_output(["git", "-C", str(source), "rev-parse", "HEAD"], text=True).strip()
         data.require(head == SOURCE_COMMIT, "Use the pinned official WAFT source commit: " + SOURCE_COMMIT)
         changes = subprocess.check_output(["git", "-C", str(source), "status", "--porcelain", "--untracked-files=no"], text=True)
         data.require(not changes.strip(), "The pinned official WAFT tracked source files must be unchanged")
+    data.require(expected_checkpoint_sha in CHECKPOINT_PROFILES, 'Unknown official checkpoint profile')
+    profile = CHECKPOINT_PROFILES[expected_checkpoint_sha]
     data.require(importlib.metadata.version("timm") == "1.0.11", "WAFT requires timm==1.0.11")
     module, helpers = _official_modules(source)
     with torch.device("cpu"), torch.random.fork_rng(devices=[]), _offline_constructor(module, importlib.import_module("timm")) as initialized:
@@ -129,7 +142,7 @@ def load_backend(source, checkpoint, device="cpu", *,
         data.require(value.dtype == expected[name].dtype and value.shape == expected[name].shape
                      and bool(torch.isfinite(value).all()), "Checkpoint shape/dtype/finite value differs: " + name)
     digest = _state_digest(state)
-    data.require(digest == STATE_SHA256, "Loaded state differs from the complete source-only WAFT checkpoint")
+    data.require(digest == profile['state_sha256'], "Loaded state differs from the complete declared official WAFT checkpoint")
     core.load_state_dict(state, strict=True)
     data.require(_state_digest(core.state_dict()) == digest, "Strictly loaded WAFT tensor bytes differ")
     core.eval().requires_grad_(False)
@@ -293,3 +306,4 @@ def infer_images(checkpoint, image1, image2, output_npz, source, waft_checkpoint
     with output.open("xb") as stream:
         np.savez(stream, **arrays)
     return metadata
+

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "stablebridge"
-version = "0.3.0"
-description = "Motion-aligned feature repair trained through a fully frozen native WAFT"
+version = "0.4.0"
+description = "Encoder-only LiteR and motion feature repair through fully frozen native WAFT"
 requires-python = ">=3.10"
 dependencies = ["numpy", "scipy", "torch", "opencv-python", "h5py", "Pillow"]
 

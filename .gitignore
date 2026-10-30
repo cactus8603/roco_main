@@ -106,3 +106,6 @@ tmp_trash
 /local/
 /checkpoints/
 
+
+# Public lean-training guide; generated site configs stay with local outputs.
+!/docs/lean-training.md

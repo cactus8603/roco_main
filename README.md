@@ -1,21 +1,24 @@
-# 凍結 WAFT 的光流特徵修復
+# 凍結 WAFT 的 encoder-only 輕量特徵修復
 
-以原生五步 MoL loss 訓練 **3,000,576 參數**的 motion-aligned 修復器，完整 WAFT 保持凍結。
-提供 KITTI 單卡及 Sintel Clean＋Final 雙卡訓練、完整 checkpoint 接續與兩張 RGB 推論。
-GT 僅進入訓練損失與評估；修復器讀取原始 F0、sigma、同次 encoder 四層特徵及原始第五步 motion prior。
+新增 **14,960 參數 LiteR 精簡版**：從兩張 RGB 提取凍結 encoder features／同次 taps，
+先修復 feature，再執行唯一一組五次 WAFT 更新。GT 只進入訓練 loss；不讀 flow、info 或 motion prior 作為 R 輸入。
+訓練保留原 native5 MoL／AdamW／FP64 clipping，**EPE 僅在全部訓練完成後評估一次，使用最後一次 flow**。
 
 ```mermaid
-flowchart TD
-    RGB[兩張 RGB] --> WAFT[凍結 WAFT encoder 與原始五步]
-    WAFT --> Inputs[F0、sigma、四層特徵、motion prior]
-    Inputs --> R[可訓練修復器 3.00M]
-    R --> Fhat[Fhat = F0 + sigma × delta]
-    Fhat --> Consumer[凍結 WAFT 完整五步]
-    Consumer --> Flow[原尺寸光流]
-    Consumer --> Loss[TRAIN 原生五步 MoL]
-    GT[TRAIN GT] --> Loss
-    Loss -. 只更新修復器 .-> R
+flowchart LR
+    RGB[兩張 RGB] --> Encoder[凍結 encoder 與同次 taps]
+    Encoder --> R[LiteR 14,960 參數]
+    R --> G5[凍結 WAFT 五次更新]
+    G5 --> Loss[native5 MoL]
+    GT[GT] --> Loss
+    Loss -. 只更新 R .-> R
+    G5 --> EPE[結束時一次末 flow EPE]
 ```
+
+提供有界 raw CPU cache、幾何快取、去除未用的記憶體遙測，以及完整續訓／資源等待時間帳／異常收尾。
+[精簡版操作與資源保護介面](docs/lean-training.md)列出設定生成、CPU 測試與正式啟動方式。
+公開 launcher 必須由使用者提供主機資源保護 adapter；缺少時會拒絕啟動，沒有放寬限制的替代路徑。
+本次發布只完成 CPU 等價與建構測試，未啟動新的 GPU 訓練。
 
 ## 安裝
 
@@ -39,7 +42,7 @@ git -C external/WAFT checkout b152ff1cad1af8c185ee7b141997c48ff3334c87
 loader 同時核對完整檔案 SHA256 與全部508個 tensors；資料、權重及實驗產物由使用者另行準備。
 不需額外 DINOv3 或 Mamba extension，也不會另下載 encoder 權重。
 
-## KITTI：50 epochs，單卡
+## 歷史 MotionFeatureRepair：KITTI 50 epochs，單卡
 
 ```bash
 waft-repair native-split-kitti --kitti-root data/kitti --output outputs/kitti-spec
@@ -55,7 +58,7 @@ MALLOC_ARENA_MAX=2 waft-repair native-train \
 固定160 TRAIN／40已曝光dev，batch1，共8000次更新，最終固定E050。
 輸入 cache 綁定所選官方底模；換底模時使用新的輸入目錄。
 
-## Sintel：80 epochs，雙卡
+## 歷史 MotionFeatureRepair：Sintel 80 epochs，雙卡
 
 ```bash
 waft-repair native-split-sintel --sintel-root data/sintel --output outputs/sintel-spec
@@ -93,5 +96,6 @@ python -m pytest tests/waft_repair -q
 [結果及限制](docs/results.md)保留方法與證據定義。
 
 先前 source-only KITTI第16epoch的已曝光dev監測結果，與目前官方底模的50／80epoch訓練分開記錄。
-目前正式長程訓練仍在進行；尚無這兩條長程訓練的最終EPE結論。
+上述 3,000,576 參數 MotionFeatureRepair 命令保留原模型與 checkpoint 格式；不會接管或重新啟動本機舊作業。
+LiteR 是獨立模型，不能互換這兩種模型的訓練 checkpoint，也沒有新增長程訓練結果。
 [歷史 target-feature MSE 流程](docs/legacy-running.md)另有模型與checkpoint格式。
